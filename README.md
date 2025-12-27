@@ -1,6 +1,5 @@
 # relaiy.io
 
-**Natural Language Email Automation**
 Describe what you want your emails to do, and Relaiy turns it into safe, reviewable workflows that run automatically. You can automate your Gmail tasks effortlessly by describing what you want in plain English — no coding or complex rules required.
 
 ---
