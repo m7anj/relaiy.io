@@ -1,0 +1,12 @@
+phase 1: auth
+
+- Oauth setup
+- gmail integration
+- store tokens in user model
+
+phase 2: worker flow
+- ui for input
+- endpoint that sends description to a llm model
+- design a config schema
+- tweak prompt to output something deterministic
+
