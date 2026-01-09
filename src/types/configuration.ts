@@ -1,5 +1,3 @@
-// BaseConfig defines how a worker behaves
-
 export interface Configuration {
   interval: string;                     // "daily at 9am", "every Monday", "every 3 days"
 
