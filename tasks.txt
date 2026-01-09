@@ -1,8 +1,8 @@
 phase 1: auth
 
-- Oauth setup
-- gmail integration
+- oauth setup with gmail integration setup
 - store tokens in user model
+- login system working (no frontend done yet)
 
 phase 2: worker flow
 - ui for input
