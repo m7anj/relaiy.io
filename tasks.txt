@@ -3,15 +3,30 @@ phase 1: auth                               (DONE)
 - store tokens in user model
 - login system working (no frontend done yet)
 
+how the OAuth flow works:
+{
+    1. User clicks "Sign in with Google"
+    2. App redirects user to Google with client_id, redirect_uri, and scope
+    3. Google shows consent screen to the user
+    4. User approves access on Google
+    5. Google redirects user back to redirect_uri with an authorization code
+    6. redirect_uri receives the code
+    7. Server exchanges the code with Google for an access token (and user info)
+    8. Server checks if user exists in the database
+    9. Server creates the user if they do not exist
+    10. Server creates a session and sets a session cookie
+    11. Server redirects user to /
+    12. / checks for the session cookie
+    13. If session exists, render the app
+    14. If session does not exist, redirect to /login
+}
+
 phase 2: worker architecture    (DONE)
-- define worker types
-- define worker lifecycle
+- define worker types and enums
 - define worker configuration
 
-phase 3: worker ui
-- dashboard for workers
-- ui for input
+phase 3: worker functionality
 - endpoint that sends description to a llm model
-- design a config schema
-- tweak prompt to output something deterministic
+- API calls for crud on a worker
+- ui for input
 

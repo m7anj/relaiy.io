@@ -1,7 +1,7 @@
 // app/api/auth/login/route.ts
 import { NextResponse } from "next/server";
 
-export async function GET() {
+export async function GET(): Promise<NextResponse> {
   const params = new URLSearchParams({
     client_id: process.env.OAUTH_CLIENT_ID!,
     redirect_uri: process.env.OAUTH_REDIRECT_URI!,
