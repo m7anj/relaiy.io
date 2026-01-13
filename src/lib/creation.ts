@@ -52,7 +52,7 @@ const SYSTEM_PROMPTS: Record<WorkerType, string> = {
 
 export async function generateWorkerConfig(
   naturalLanguagePrompt: string,
-  type: WorkerType
+  type: WorkerType,
 ): Promise<Configuration> {
   try {
     const systemPrompt = SYSTEM_PROMPTS[type];
