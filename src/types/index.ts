@@ -1,7 +1,7 @@
 // Central export for all types
-export type { default as Configuration } from "./configuration";
+export type { Configuration } from "./configuration";
 
-export type { default as Worker } from "./worker";
+export type { Worker } from "./worker";
 export { WorkerStatus, ExecutionStatus, WorkerType } from "./worker";
 export { STATUS, WORKER_TYPE } from "./worker"; // backward compat
 

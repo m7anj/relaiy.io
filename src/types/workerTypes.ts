@@ -1,5 +1,5 @@
 import { WorkerType } from "./worker";
-import Configuration from "./configuration";
+import type { Configuration } from "./configuration";
 
 // Type-specific LLM prompts and default configs
 
@@ -16,8 +16,7 @@ export const WORKER_TYPE_CONFIGS: Record<WorkerType, WorkerTypeConfig> = {
     defaultConfig: {
       tone: "professional",
       style: "brief",
-      maxExecutions: 1,
-      stopIfReplied: true,
+      lifespan: 1,
     },
   },
 
@@ -37,7 +36,7 @@ export const WORKER_TYPE_CONFIGS: Record<WorkerType, WorkerTypeConfig> = {
     defaultConfig: {
       tone: "professional",
       style: "brief",
-      maxExecutions: 1,
+      lifespan: 1,
       contextEmails: { limit: 3 },
     },
   },
@@ -49,7 +48,7 @@ export const WORKER_TYPE_CONFIGS: Record<WorkerType, WorkerTypeConfig> = {
       tone: "professional",
       style: "detailed",
       contextEmails: { limit: 50 },
-      subject: "Email Digest",
+      subjectTemplate: "Email Digest",
     },
   },
 };

@@ -23,29 +23,33 @@ export enum WorkerType {
     DIGEST = "DIGEST",          // digests emails and summarize them into a single email, either send it back to yourself for summary OR another recipient
 }
 
-// worker extends Configuration and adds metadata/lifecycle tracking
-export interface Worker extends Configuration {
+// Worker type matches the shape returned from Prisma
+export interface Worker {
   // Identity
   id: string;
   userId: string;                      // who owns this worker
   name: string;                        // user-friendly name
-  description?: string;                // optional user notes
+  description?: string | null;         // optional user notes
 
   // Type & behavior
   type: WorkerType;                     // determines LLM behavior and defaults
   information?: string[];              // additional context for LLM
 
+  // Configuration stored as JSON in DB
+  configuration: Configuration;        // the actual worker config
+
   // Status tracking
   status: WorkerStatus;                // lifecycle status
-  lastExecutionStatus?: ExecutionStatus; // how the last run went
+  lastExecutionStatus?: ExecutionStatus | null; // how the last run went
 
   // Execution tracking
   executionCount: number;              // how many times this worker has done something
-  lastExecutedAt?: Date;               // when it last ran
-  nextScheduledAt?: Date;              // when it will run next
+  lastExecutedAt?: Date | null;       // when it last ran
+  nextScheduledAt?: Date | null;      // when it will run next
 
   // Timestamps
   createdAt: Date;
+  updatedAt: Date;
 }
 
 export { WorkerStatus as STATUS, WorkerType as WORKER_TYPE };
