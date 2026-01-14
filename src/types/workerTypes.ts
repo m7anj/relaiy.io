@@ -24,7 +24,7 @@ export const WORKER_TYPE_CONFIGS: Record<WorkerType, WorkerTypeConfig> = {
     description: "Warm relationship check-ins",
     systemPrompt: "Write a warm, conversational email to maintain a relationship. Reference past context, be genuine, don't push for anything specific.",
     defaultConfig: {
-      tone: "friendly",
+      tone: "friendly", 
       style: "casual",
       contextEmails: { limit: 10 },
     },
