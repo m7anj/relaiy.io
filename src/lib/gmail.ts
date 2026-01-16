@@ -70,7 +70,8 @@ export async function sendEmail(
     accessToken: string,
     recipient: string[],
     subject: string,
-    body: string
+    body: string,
+    dryRun: boolean = false,
 ) {
     const gmail = getGmailClient(accessToken);
 
@@ -99,8 +100,11 @@ export async function sendEmail(
         .replace(/=+$/, '');
 
     
-    // now we send the email
-    const response = await gmail.users.messages.send({
+    if (dryRun) {
+        console.log('Dry run: ', { base64EncodedEmail });
+        return "base64EncodedEmail";
+    } else {
+        const response = await gmail.users.messages.send({
         userId: 'me',
         requestBody: {
             raw: base64EncodedEmail
@@ -108,4 +112,5 @@ export async function sendEmail(
     });
 
     return response.data;
+    }
 }
