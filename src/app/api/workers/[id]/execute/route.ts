@@ -2,8 +2,8 @@ import { getAuthenticatedUser } from "@/lib/auth";
 import { fetchEmailsFromRecipients } from "@/lib/gmail";
 import { NextRequest } from "next/server";
 
-export async function POST( req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
-    const { id: workerId } = await params;
+export async function POST(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+  const { id: workerId } = await params;
 
   // 1. Auth check at the top
   const user = await getAuthenticatedUser();
@@ -26,7 +26,7 @@ export async function POST( req: NextRequest, { params }: { params: Promise<{ id
       workerId,
       emailCount: emails.length,
     });
-  } catch (error: any) {
-    return Response.json({ error: error.message }, { status: 500 });
+  } catch (error) {
+    return Response.json({ error }, { status: 500 });
   }
 }

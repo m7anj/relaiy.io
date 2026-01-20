@@ -44,9 +44,9 @@ export async function fetchEmailsFromRecipients(
 
     const gmail = google.gmail({ version: "v1", auth: oauth2Client });
 
-    const query = 
+    const query =
         recipients.map((recipient) => `from:${recipient}`)  // maps a .from:{} to every single email
-        .join(" OR ");  // joins them with OR to satsify the query
+            .join(" OR ");  // joins them with OR to satsify the query
 
     const response = await gmail.users.messages.list({
         userId: "me",
@@ -78,10 +78,10 @@ export async function sendEmail(
     // STEP 1: Build RFC 2822 formatted email
     // RFC 2822 is the standard email format: headers followed by body
     // Each header is "Key: Value\r\n", then blank line, then body
-    const query = 
+    const query =
         recipient.map((recipient) => `from:${recipient}`)  // maps a .from:{} to every single email
-        .join(" OR ");  // joins them with OR to satsify the query
-    
+            .join(" OR ");  // joins them with OR to satsify the query
+
     const emailLines = [
         `To: ${query}`,
         `Subject: ${subject}`,
@@ -99,18 +99,18 @@ export async function sendEmail(
         .replace(/\//g, '_')
         .replace(/=+$/, '');
 
-    
+
     if (dryRun) {
         console.log('Dry run: ', { base64EncodedEmail });
         return "base64EncodedEmail";
     } else {
         const response = await gmail.users.messages.send({
-        userId: 'me',
-        requestBody: {
-            raw: base64EncodedEmail
-        }
-    });
+            userId: 'me',
+            requestBody: {
+                raw: base64EncodedEmail
+            }
+        });
 
-    return response.data;
+        return response.data;
     }
 }
