@@ -12,7 +12,7 @@ Relaiy is a Gmail automation platform that lets users describe email workflows i
 - **Language:** TypeScript
 - **Database:** PostgreSQL with Prisma ORM
 - **Auth:** NextAuth.js with Google OAuth (includes Gmail API scopes)
-- **AI:** OpenAI GPT-4 for config generation
+- **AI:** Groq (llama-3.3-70b-versatile) for config generation
 - **Email:** Gmail API via `googleapis`
 - **Validation:** Zod for schema validation
 - **Styling:** Tailwind CSS v4
@@ -211,7 +211,7 @@ Required in `.env`:
 DATABASE_URL=           # PostgreSQL connection string
 GOOGLE_CLIENT_ID=       # Google OAuth client ID
 GOOGLE_CLIENT_SECRET=   # Google OAuth client secret
-OPENAI_API_KEY=         # OpenAI API key
+GROQ_API_KEY=           # Groq API key
 NEXTAUTH_SECRET=        # NextAuth secret
 NEXTAUTH_URL=           # App URL (http://localhost:3000 for dev)
 ```

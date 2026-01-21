@@ -1,7 +1,7 @@
 import { Configuration } from "@/types/configuration";
 import { WorkerType } from "@/types/worker";
 import { z } from "zod";
-import OpenAI from "openai";
+import Groq from "groq-sdk";
 
 // Zod schema to validate LLM output matches Configuration interface
 const ConfigurationSchema = z.object({
@@ -19,9 +19,34 @@ const ConfigurationSchema = z.object({
   lifespan: z.number().optional(),
 });
 
-const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY,
+const groq = new Groq({
+  apiKey: process.env.GROQ_API_KEY,
 });
+
+/**
+ * Normalize LLM output to ensure it matches our schema
+ * Handles cases where LLM returns arrays instead of strings, etc.
+ */
+function normalizeConfiguration(data: any): any {
+  const normalized = { ...data };
+
+  // Ensure customInstructions is a string (not an array)
+  if (Array.isArray(normalized.customInstructions)) {
+    normalized.customInstructions = normalized.customInstructions.join(". ");
+  }
+
+  // Ensure information is an array if it exists
+  if (normalized.information && !Array.isArray(normalized.information)) {
+    normalized.information = [normalized.information];
+  }
+
+  // Ensure recipients is always an array
+  if (normalized.recipients && !Array.isArray(normalized.recipients)) {
+    normalized.recipients = [normalized.recipients];
+  }
+
+  return normalized;
+}
 
 // Type-specific system prompts
 const SYSTEM_PROMPTS: Record<WorkerType, string> = {
@@ -63,18 +88,21 @@ User's context: "${context ? context.join(',') : 'No Context'}"
 
 Generate a valid Configuration JSON object with these fields:
 - interval (string): When to send (e.g., "daily at 9am", "every Monday", "every 3 days")
-- recipients (string[]): Email addresses to send to
-- contextEmails (optional): { labels?: string[], from?: string[], limit?: number }
-- tone (optional): "professional", "casual", "friendly", "formal"
-- style (optional): "brief", "detailed", "creative"
-- customInstructions (optional): Additional instructions for email generation
-- subjectTemplate (optional): Template for subject line, or null for LLM to decide
-- lifespan (optional): How many times to send before stopping (default: 1)
+- recipients (string[]): Array of email addresses to send to
+- contextEmails (optional object): { labels?: string[], from?: string[], limit?: number }
+- tone (optional string): "professional", "casual", "friendly", or "formal"
+- style (optional string): "brief", "detailed", or "creative"
+- customInstructions (optional string): Single string with additional instructions for email generation
+- subjectTemplate (optional string or null): Template for subject line, or null for LLM to decide
+- lifespan (optional number): How many times to send before stopping (default: 1)
 
-Return ONLY the JSON object, no explanation.`;
+IMPORTANT:
+- customInstructions must be a STRING, not an array
+- All text fields must be strings, not arrays
+- Return ONLY the JSON object, no explanation.`;
 
-    const completion = await openai.chat.completions.create({
-      model: "gpt-4",
+    const completion = await groq.chat.completions.create({
+      model: "llama-3.3-70b-versatile",
       messages: [
         { role: "system", content: systemPrompt },
         { role: "user", content: userPrompt },
@@ -85,11 +113,14 @@ Return ONLY the JSON object, no explanation.`;
 
     const content = completion.choices[0].message.content;
     if (!content) {
-      throw new Error("No response from OpenAI");
+      throw new Error("No response from Groq");
     }
 
     const parsed = JSON.parse(content);
-    const validated = ConfigurationSchema.parse(parsed);
+
+    // Normalize the parsed data before validation
+    const normalized = normalizeConfiguration(parsed);
+    const validated = ConfigurationSchema.parse(normalized);
 
     return validated;
   } catch (error) {

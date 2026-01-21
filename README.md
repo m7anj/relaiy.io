@@ -62,4 +62,4 @@ Use cases include:
 * Node.js >= 18
 * PostgreSQL
 * Gmail account with OAuth credentials
-* OpenAI API access
+* Groq API access

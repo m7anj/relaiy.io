@@ -1,9 +1,9 @@
 import { Configuration } from "@/types/configuration";
 import { WorkerType } from "@/types/worker";
-import OpenAI from "openai";
+import Groq from "groq-sdk";
 
-const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY,
+const groq = new Groq({
+  apiKey: process.env.GROQ_API_KEY,
 });
 
 interface EmailPreview {
@@ -51,8 +51,8 @@ Return a JSON object with:
 `;
 
     try {
-      const completion = await openai.chat.completions.create({
-        model: "gpt-4",
+      const completion = await groq.chat.completions.create({
+        model: "llama-3.3-70b-versatile",
         messages: [
           { role: "system", content: systemPrompt },
           { role: "user", content: userPrompt },
@@ -63,7 +63,7 @@ Return a JSON object with:
 
       const content = completion.choices[0].message.content;
       if (!content) {
-        throw new Error("No response from OpenAI");
+        throw new Error("No response from Groq");
       }
 
       const parsed = JSON.parse(content);

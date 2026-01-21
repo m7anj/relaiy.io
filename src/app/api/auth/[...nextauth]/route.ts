@@ -7,6 +7,9 @@ import { prisma } from "@/lib/prisma";
 
 export const authOptions = {
   adapter: PrismaAdapter(prisma),
+  session: {
+    strategy: "jwt", // Use JWT strategy instead of database sessions
+  },
   providers: [
     GoogleProvider({
       clientId: process.env.GOOGLE_CLIENT_ID!,
@@ -26,6 +29,10 @@ export const authOptions = {
       },
     }),
   ],
+  pages: {
+    signIn: "/",
+    error: "/",
+  },
   callbacks: {
     async jwt({ token, account }: { token: JWT; account: Account | null }) {
       // On initial sign-in, account object contains the tokens
@@ -36,19 +43,27 @@ export const authOptions = {
       }
 
       // If token hasn't expired, return it
-      if (Date.now() < (token.accessTokenExpires as number) * 1000) {
+      if (token.accessTokenExpires && Date.now() < (token.accessTokenExpires as number) * 1000) {
         return token;
       }
 
       // Token expired, refresh it
-      return await refreshAccessToken(token);
+      if (token.refreshToken) {
+        return await refreshAccessToken(token);
+      }
+
+      return token;
     },
     async session({ session, token }: { session: Session; token: JWT }) {
-      session.accessToken = token.accessToken;
-      session.error = token.error;
+      // With JWT strategy, token is always available
+      if (token) {
+        session.accessToken = token.accessToken;
+        session.error = token.error;
+      }
       return session;
     },
   },
+  debug: process.env.NODE_ENV === "development",
 };
 
 const handler = NextAuth(authOptions);
