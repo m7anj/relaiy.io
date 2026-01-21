@@ -1,4 +1,5 @@
 import { google } from "googleapis";
+import { simulateSendEmail } from "./dryrun";
 
 /**
  * Get Gmail client for making API calls
@@ -101,16 +102,15 @@ export async function sendEmail(
 
 
     if (dryRun) {
-        console.log('Dry run: ', { base64EncodedEmail });
-        return "base64EncodedEmail";
-    } else {
-        const response = await gmail.users.messages.send({
-            userId: 'me',
-            requestBody: {
-                raw: base64EncodedEmail
-            }
-        });
-
-        return response.data;
+        return simulateSendEmail(base64EncodedEmail);
     }
+
+    const response = await gmail.users.messages.send({
+        userId: 'me',
+        requestBody: {
+            raw: base64EncodedEmail
+        }
+    });
+
+    return response.data;
 }
