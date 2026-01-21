@@ -53,12 +53,13 @@ const SYSTEM_PROMPTS: Record<WorkerType, string> = {
 export async function generateWorkerConfig(
   naturalLanguagePrompt: string,
   type: WorkerType,
+  context?: string[],
 ): Promise<Configuration> {
   try {
     const systemPrompt = SYSTEM_PROMPTS[type];
-
     const userPrompt = `
 User's description: "${naturalLanguagePrompt}"
+User's context: "${context ? context.join(',') : 'No Context'}"
 
 Generate a valid Configuration JSON object with these fields:
 - interval (string): When to send (e.g., "daily at 9am", "every Monday", "every 3 days")

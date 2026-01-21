@@ -191,8 +191,8 @@ NEXTAUTH_URL=           # App URL (http://localhost:3000 for dev)
 - [x] Auth helper (`getAuthenticatedUser`)
 
 ### TODO / Incomplete
-- [ ] `GET /api/workers` - List workers
-- [ ] `GET/PATCH/DELETE /api/workers/[id]` - Worker CRUD
+- [x] `GET /api/workers` - List workers
+- [x] `GET/PATCH/DELETE /api/workers/[id]` - Worker CRUD
 - [ ] `GET /api/workers/[id]/logs` - Execution logs
 - [ ] `src/lib/dryrun.ts` - Dry run simulation
 - [ ] Worker execution scheduling (cron jobs)

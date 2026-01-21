@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "../../auth/[...nextauth]/route";
 
+// GET: emails of a user
 export async function GET() {
   const session = await getServerSession(authOptions);
 
