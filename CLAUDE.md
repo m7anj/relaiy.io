@@ -193,12 +193,12 @@ NEXTAUTH_URL=           # App URL (http://localhost:3000 for dev)
 ### TODO / Incomplete
 - [x] `GET /api/workers` - List workers
 - [x] `GET/PATCH/DELETE /api/workers/[id]` - Worker CRUD
-- [ ] `GET /api/workers/[id]/logs` - Execution logs
-- [ ] `src/lib/dryrun.ts` - Dry run simulation
+- [x] `GET/POST /api/workers/[id]/logs` - Execution logs (fetch and create)
+- [x] `src/lib/dryrun.ts` - Dry run simulation
+- [x] Execution logging to WorkerExecution table
 - [ ] Worker execution scheduling (cron jobs)
 - [ ] Frontend UI (pages/components)
 - [ ] Worker pause/resume/stop functionality
-- [ ] Execution logging to WorkerExecution table
 
 ## Code Patterns
 
