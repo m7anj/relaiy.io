@@ -153,6 +153,15 @@ if (!user) return Response.json({ message: "Not authenticated" }, { status: 401 
 - `fetchEmailsFromRecipients(accessToken, recipients)` - Fetch emails from specific senders
 - `sendEmail(accessToken, recipients, subject, body, dryRun)` - Send email via Gmail API
 
+### `src/lib/preview.ts`
+- `generateEmailPreviews(config, workerType, workerName, contextEmails)` - Generate preview emails using LLM
+- Uses type-specific prompts to show what emails will look like
+- Called automatically during worker creation for user review
+
+### `src/lib/dryrun.ts`
+- `simulateSendEmail(base64EncodedEmail)` - Simulate email sending without actually sending
+- Used for testing email generation before activation
+
 ## Development Commands
 
 ```bash
@@ -195,7 +204,9 @@ NEXTAUTH_URL=           # App URL (http://localhost:3000 for dev)
 - [x] `GET/PATCH/DELETE /api/workers/[id]` - Worker CRUD
 - [x] `GET/POST /api/workers/[id]/logs` - Execution logs (fetch and create)
 - [x] `src/lib/dryrun.ts` - Dry run simulation
+- [x] `src/lib/preview.ts` - Preview email generation
 - [x] Execution logging to WorkerExecution table
+- [x] Automatic preview generation on worker creation
 - [ ] Worker execution scheduling (cron jobs)
 - [ ] Frontend UI (pages/components)
 - [ ] Worker pause/resume/stop functionality
@@ -231,16 +242,20 @@ export async function POST(req: Request) {
 1. User provides natural language description + WorkerType
 2. `generateWorkerConfig()` calls GPT-4 with type-specific prompts
 3. Zod validates the generated Configuration
-4. Worker saved to database with status=DRAFT
-5. User reviews and activates
+4. System fetches context emails (if configured in contextEmails)
+5. `generateEmailPreviews()` creates preview emails using LLM (DRY RUN)
+6. Worker saved to database with status=DRAFT
+7. Preview emails returned to user for review
+8. User reviews preview and activates worker if satisfied
 
-### Execution Flow (To Be Implemented)
-1. Scheduler triggers worker based on `configuration.interval`
-2. Fetch context emails based on `configuration.contextEmails`
-3. Generate email content using type-specific prompts
-4. Send email via Gmail API (or dry run)
-5. Log execution to WorkerExecution table
-6. Update worker's `executionCount`, `lastExecutedAt`, `nextScheduledAt`
+### Execution Flow
+1. User manually executes worker via `/api/workers/[id]/execute` OR scheduler triggers (future)
+2. Creates WorkerExecution record with status=RUNNING
+3. Fetches context emails based on `configuration.contextEmails`
+4. Generates email content using type-specific LLM prompts
+5. Sends email via Gmail API (or simulates with dryRun flag)
+6. Updates WorkerExecution to SUCCESS/ERROR with logs
+7. Atomically updates worker's `executionCount`, `lastExecutedAt`, `lastExecutionStatus`
 
 ## Notes for Development
 

@@ -20,4 +20,7 @@ export interface Configuration {
 
   // When to stop
   lifespan?: number;               // stop after X sends (default: 1)
+
+  // Index signature for Prisma JSON compatibility
+  [key: string]: any;
 }
