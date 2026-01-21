@@ -1,6 +1,8 @@
 import { getAuthenticatedUser } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
 import { NextRequest } from 'next/server';
+import { registerWorker, unregisterWorker } from '@/lib/scheduler';
+import { Configuration } from '@/types/configuration';
 
 export async function GET(
   req: NextRequest,
@@ -81,7 +83,28 @@ export async function PATCH(
       },
     });
 
-    // 5. return the updated worker
+    // 5. Handle scheduler registration based on status changes
+    if (body.status !== undefined) {
+      const newStatus = body.status;
+      const config = updatedWorker.configuration as unknown as Configuration;
+
+      if (newStatus === 'ACTIVE') {
+        // Register with scheduler when activated
+        registerWorker(workerId, config.interval);
+      } else if (newStatus === 'PAUSED' || newStatus === 'STOPPED') {
+        // Unregister from scheduler when paused or stopped
+        unregisterWorker(workerId);
+      }
+    }
+
+    // 6. If configuration.interval changed and worker is ACTIVE, re-register
+    if (body.configuration !== undefined && updatedWorker.status === 'ACTIVE') {
+      const config = updatedWorker.configuration as unknown as Configuration;
+      unregisterWorker(workerId);
+      registerWorker(workerId, config.interval);
+    }
+
+    // 7. return the updated worker
     return Response.json({
       message: "Worker updated successfully",
       worker: updatedWorker,
@@ -117,12 +140,15 @@ export async function DELETE(
       return Response.json({ message: "Forbidden - Not your worker" }, { status: 403 });
     }
 
-    // 3. delete the worker (cascade will delete related executions)
+    // 3. unregister from scheduler if it's registered
+    unregisterWorker(workerId);
+
+    // 4. delete the worker (cascade will delete related executions)
     await prisma.worker.delete({
       where: { id: workerId },
     });
 
-    // 4. return success message
+    // 5. return success message
     return Response.json({
       message: "Worker deleted successfully",
       deletedWorkerId: workerId,

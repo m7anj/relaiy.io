@@ -30,20 +30,25 @@ src/
 │   │   │       └── callback/route.ts   # Gmail OAuth callback
 │   │   ├── gmail/
 │   │   │   └── messages/route.ts       # Fetch Gmail messages
+│   │   ├── scheduler/
+│   │   │   └── init/route.ts           # GET/POST: Scheduler init & status
 │   │   └── workers/
-│   │       ├── route.ts                # List workers (empty)
+│   │       ├── route.ts                # GET: List workers
 │   │       ├── create/route.ts         # POST: Create new worker
 │   │       └── [id]/
-│   │           ├── route.ts            # GET/PATCH/DELETE worker (empty)
-│   │           ├── execute/route.ts    # POST: Execute worker
-│   │           └── logs/route.ts       # GET: Worker execution logs (empty)
-│   └── types.ts                        # (empty - use src/types instead)
+│   │           ├── route.ts            # GET/PATCH/DELETE worker
+│   │           ├── execute/route.ts    # POST: Execute worker (manual/first run)
+│   │           └── logs/route.ts       # GET/POST: Worker execution logs
+│   ├── types.ts                        # (empty - use src/types instead)
+│   └── instrumentation.ts              # Server startup hook - initializes scheduler
 ├── lib/
 │   ├── auth.ts         # getAuthenticatedUser() helper
 │   ├── creation.ts     # generateWorkerConfig() - LLM config generation
 │   ├── gmail.ts        # Gmail API utilities (fetch, send)
 │   ├── prisma.ts       # Prisma client singleton
-│   └── dryrun.ts       # (empty - dry run logic)
+│   ├── scheduler.ts    # Cron scheduler for automated worker execution
+│   ├── preview.ts      # generateEmailPreviews() - Preview email generation
+│   └── dryrun.ts       # simulateSendEmail() - Dry run simulation
 ├── types/
 │   ├── index.ts        # Central type exports
 │   ├── worker.ts       # Worker, WorkerStatus, WorkerType, ExecutionStatus
@@ -105,13 +110,20 @@ interface Configuration {
 ### Workers
 | Method | Endpoint | Description |
 |--------|----------|-------------|
-| GET | `/api/workers` | List user's workers (TODO) |
+| GET | `/api/workers` | List user's workers |
 | POST | `/api/workers/create` | Create new worker from description |
-| GET | `/api/workers/[id]` | Get worker details (TODO) |
-| PATCH | `/api/workers/[id]` | Update worker (TODO) |
-| DELETE | `/api/workers/[id]` | Delete worker (TODO) |
-| POST | `/api/workers/[id]/execute` | Execute worker |
-| GET | `/api/workers/[id]/logs` | Get execution logs (TODO) |
+| GET | `/api/workers/[id]` | Get worker details |
+| PATCH | `/api/workers/[id]` | Update worker |
+| DELETE | `/api/workers/[id]` | Delete worker |
+| POST | `/api/workers/[id]/execute` | Execute worker (manual/first run) |
+| GET | `/api/workers/[id]/logs` | Get execution logs |
+| POST | `/api/workers/[id]/logs` | Create execution log |
+
+### Scheduler
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| POST | `/api/scheduler/init` | Initialize scheduler (load ACTIVE workers) |
+| GET | `/api/scheduler/init` | Get currently scheduled tasks info |
 
 ### Gmail
 | Method | Endpoint | Description |
@@ -162,6 +174,21 @@ if (!user) return Response.json({ message: "Not authenticated" }, { status: 401 
 - `simulateSendEmail(base64EncodedEmail)` - Simulate email sending without actually sending
 - Used for testing email generation before activation
 
+### `src/lib/scheduler.ts`
+- `parseIntervalToCron(interval)` - Converts natural language intervals to cron expressions
+- `executeWorker(workerId, isDryRun)` - Core execution logic for workers (used by both manual and automated runs)
+- `registerWorker(workerId, interval)` - Register worker with cron scheduler
+- `unregisterWorker(workerId)` - Remove worker from cron scheduler
+- `initializeScheduler()` - Load all ACTIVE workers on app startup
+- `getScheduledTasks()` - Get list of currently scheduled workers
+- Uses `node-cron` for scheduling
+- Automatically handles lifespan checking and auto-stopping workers
+
+### `src/instrumentation.ts`
+- Next.js server startup hook
+- Automatically calls `initializeScheduler()` when server starts
+- Ensures all ACTIVE workers are scheduled on app startup
+
 ## Development Commands
 
 ```bash
@@ -198,18 +225,23 @@ NEXTAUTH_URL=           # App URL (http://localhost:3000 for dev)
 - [x] Gmail API integration (fetch, send)
 - [x] Type system for workers and configurations
 - [x] Auth helper (`getAuthenticatedUser`)
-
-### TODO / Incomplete
-- [x] `GET /api/workers` - List workers
-- [x] `GET/PATCH/DELETE /api/workers/[id]` - Worker CRUD
-- [x] `GET/POST /api/workers/[id]/logs` - Execution logs (fetch and create)
-- [x] `src/lib/dryrun.ts` - Dry run simulation
-- [x] `src/lib/preview.ts` - Preview email generation
+- [x] All Worker CRUD endpoints (GET/POST/PATCH/DELETE)
+- [x] Execution logs endpoints (GET/POST)
+- [x] Dry run simulation (`src/lib/dryrun.ts`)
+- [x] Preview email generation (`src/lib/preview.ts`)
 - [x] Execution logging to WorkerExecution table
 - [x] Automatic preview generation on worker creation
-- [ ] Worker execution scheduling (cron jobs)
+- [x] **Worker execution scheduling (cron jobs)**
+- [x] **Status transitions (DRAFT → ACTIVE on first execution)**
+- [x] **Automatic lifespan checking and worker stopping**
+- [x] **Scheduler integration with PATCH/DELETE endpoints**
+
+### TODO / Incomplete
 - [ ] Frontend UI (pages/components)
-- [ ] Worker pause/resume/stop functionality
+- [ ] User-configurable timezone for scheduling
+- [ ] Enhanced LLM email generation (currently uses placeholder templates)
+- [ ] Rate limiting for worker executions
+- [ ] Execution retry logic for failed runs
 
 ## Code Patterns
 
@@ -246,16 +278,77 @@ export async function POST(req: Request) {
 5. `generateEmailPreviews()` creates preview emails using LLM (DRY RUN)
 6. Worker saved to database with status=DRAFT
 7. Preview emails returned to user for review
-8. User reviews preview and activates worker if satisfied
+8. User reviews preview - worker stays in DRAFT until first execution
 
-### Execution Flow
-1. User manually executes worker via `/api/workers/[id]/execute` OR scheduler triggers (future)
-2. Creates WorkerExecution record with status=RUNNING
-3. Fetches context emails based on `configuration.contextEmails`
-4. Generates email content using type-specific LLM prompts
-5. Sends email via Gmail API (or simulates with dryRun flag)
-6. Updates WorkerExecution to SUCCESS/ERROR with logs
-7. Atomically updates worker's `executionCount`, `lastExecutedAt`, `lastExecutionStatus`
+### First Execution Flow (DRAFT → ACTIVE)
+1. User manually triggers first execution via POST `/api/workers/[id]/execute`
+2. Worker status transitions from DRAFT → ACTIVE
+3. Worker is registered with cron scheduler using `configuration.interval`
+4. First email execution happens (via `executeWorker()`)
+5. Worker is now scheduled for automated future executions
+6. Response includes confirmation of activation and scheduling
+
+### Automated Execution Flow (Scheduled)
+1. Cron scheduler triggers based on `configuration.interval` (e.g., "daily at 9am")
+2. `executeWorker(workerId)` is called automatically
+3. Creates WorkerExecution record with status=RUNNING
+4. Fetches context emails based on `configuration.contextEmails`
+5. Generates email content using type-specific LLM prompts
+6. Sends email via Gmail API
+7. Updates WorkerExecution to SUCCESS/ERROR with logs
+8. Atomically updates worker's `executionCount`, `lastExecutedAt`, `lastExecutionStatus`
+9. Checks if `executionCount >= configuration.lifespan`:
+   - If yes: Updates worker status to STOPPED and unregisters from scheduler
+   - If no: Continues scheduling future executions
+
+### Worker Lifecycle Management
+- **DRAFT**: Created but not activated, no scheduling
+- **ACTIVE**: First execution completed, registered with scheduler, runs automatically
+- **PAUSED**: User paused via PATCH, unregistered from scheduler, can be resumed
+- **STOPPED**: Lifespan reached or user stopped, unregistered from scheduler, permanent
+
+## Scheduler System
+
+### How It Works
+The scheduler uses `node-cron` to automatically execute workers based on their configured intervals. It runs in-process with the Next.js server.
+
+### Initialization
+On server startup, `src/instrumentation.ts` automatically:
+1. Calls `initializeScheduler()` from `src/lib/scheduler.ts`
+2. Loads all workers with status=ACTIVE from database
+3. Registers each worker with cron using their `configuration.interval`
+4. Logs the number of workers registered
+
+### Interval Parsing
+Natural language intervals are converted to cron expressions:
+- `"daily at 9am"` → `"0 9 * * *"`
+- `"every Monday at 10am"` → `"0 10 * * 1"`
+- `"every 3 hours"` → `"0 */3 * * *"`
+- `"every Tuesday"` → `"0 9 * * 2"` (defaults to 9am)
+
+### Registration/Unregistration
+Workers are automatically registered/unregistered with the scheduler:
+
+**Registered when:**
+- First execution (DRAFT → ACTIVE transition)
+- Status updated to ACTIVE via PATCH
+- Configuration.interval updated via PATCH (re-registers with new schedule)
+
+**Unregistered when:**
+- Status updated to PAUSED or STOPPED via PATCH
+- Worker deleted via DELETE
+- Lifespan reached (auto-stops and unregisters)
+
+### Debugging
+- `GET /api/scheduler/init` - View currently scheduled workers
+- `POST /api/scheduler/init` - Manually re-initialize scheduler (useful after deployment)
+- Check server logs for cron execution messages
+
+### Important Notes
+- Scheduler runs in the Next.js server process
+- Timezone is currently hardcoded to `America/New_York` (TODO: make configurable)
+- If server restarts, scheduler automatically reinitializes via `instrumentation.ts`
+- All ACTIVE workers are re-registered on startup
 
 ## Notes for Development
 

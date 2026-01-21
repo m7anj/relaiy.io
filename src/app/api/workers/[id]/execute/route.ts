@@ -1,21 +1,11 @@
 import { getAuthenticatedUser } from "@/lib/auth";
-import { fetchEmailsFromRecipients, sendEmail } from "@/lib/gmail";
 import { NextRequest } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { ExecutionStatus, Prisma } from "@/generated/prisma";
 import { Configuration } from "@/types/configuration";
-
-interface ExecutionAction {
-  action: "email_sent" | "email_simulated";
-  recipient: string;
-  subject: string;
-  timestamp: string;
-  result: "sent" | "dry_run";
-}
+import { executeWorker, registerWorker } from "@/lib/scheduler";
 
 export async function POST(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const { id: workerId } = await params;
-  const startTime = Date.now();
 
   // 1. Auth check
   const user = await getAuthenticatedUser();
@@ -37,7 +27,6 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
         id: true,
         userId: true,
         name: true,
-        type: true,
         status: true,
         configuration: true,
       },
@@ -54,6 +43,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
       );
     }
 
+    // 4. Check if worker can be executed
     if (worker.status !== "ACTIVE" && worker.status !== "DRAFT") {
       return Response.json(
         { message: `Cannot execute worker with status: ${worker.status}` },
@@ -63,126 +53,54 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
 
     const config = worker.configuration as unknown as Configuration;
 
-    // 4. Parse optional dryRun flag from request body
+    // 5. Parse optional dryRun flag from request body
     const body = await req.json().catch(() => ({}));
     const isDryRun = body.isDryRun || false;
 
-    // 5. Create initial execution log with RUNNING status
-    const execution = await prisma.workerExecution.create({
-      data: {
-        workerId,
-        status: ExecutionStatus.RUNNING,
-        affectedEmails: [],
-        emailCount: 0,
-        actionsPerformed: [],
-        isDryRun,
-      },
-    });
+    // 6. Check if this is the first execution (DRAFT -> ACTIVE transition)
+    const isFirstExecution = worker.status === "DRAFT";
 
-    // 6. Execute worker logic
-    const affectedEmails: string[] = [];
-    const actionsPerformed: ExecutionAction[] = [];
+    // 7. If first execution and not a dry run, activate worker and register with scheduler
+    if (isFirstExecution && !isDryRun) {
+      // Update status to ACTIVE
+      await prisma.worker.update({
+        where: { id: workerId },
+        data: { status: "ACTIVE" },
+      });
 
-    try {
-      // Fetch context emails if configured
-      let contextEmails: Array<{ id?: string | null }> = [];
-      if (config.contextEmails?.from && config.contextEmails.from.length > 0) {
-        contextEmails = await fetchEmailsFromRecipients(
-          accessToken,
-          config.contextEmails.from
-        );
-        affectedEmails.push(...contextEmails.map((email) => email.id || "unknown"));
+      // Register with cron scheduler for automated future executions
+      const registered = registerWorker(workerId, config.interval);
+
+      if (!registered) {
+        console.error(`Failed to register worker ${workerId} with scheduler`);
+        // Continue with execution anyway, manual execution still works
+      } else {
+        console.log(`Worker ${workerId} activated and registered with scheduler`);
       }
+    }
 
-      // Generate email content (placeholder for now - will integrate with LLM later)
-      const subject = config.subjectTemplate || `Message from ${worker.name}`;
-      const body = `This is an automated email from ${worker.name}.\n\nTone: ${config.tone || "professional"}\nStyle: ${config.style || "brief"}`;
+    // 8. Execute the worker using the scheduler's executeWorker function
+    const result = await executeWorker(workerId, isDryRun);
 
-      // Send email to recipients
-      for (const recipient of config.recipients) {
-        const result = await sendEmail(
-          accessToken,
-          [recipient],
-          subject,
-          body,
-          isDryRun
-        );
-
-        actionsPerformed.push({
-          action: isDryRun ? "email_simulated" : "email_sent",
-          recipient,
-          subject,
-          timestamp: new Date().toISOString(),
-          result: isDryRun ? "dry_run" : "sent",
-        });
-      }
-
-      // 7. Update execution to SUCCESS
-      const duration = Date.now() - startTime;
-      await prisma.$transaction([
-        prisma.workerExecution.update({
-          where: { id: execution.id },
-          data: {
-            status: ExecutionStatus.SUCCESS,
-            affectedEmails,
-            emailCount: affectedEmails.length,
-            actionsPerformed: actionsPerformed as unknown as Prisma.InputJsonValue,
-            duration,
-          },
-        }),
-        prisma.worker.update({
-          where: { id: workerId },
-          data: {
-            executionCount: { increment: 1 },
-            lastExecutedAt: new Date(),
-            lastExecutionStatus: ExecutionStatus.SUCCESS,
-          },
-        }),
-      ]);
-
+    if (result.success) {
       return Response.json({
-        message: isDryRun ? "Dry run completed successfully" : "Execution completed successfully",
-        executionId: execution.id,
-        emailCount: affectedEmails.length,
-        actionCount: actionsPerformed.length,
-        duration,
+        message: isDryRun
+          ? "Dry run completed successfully"
+          : isFirstExecution
+            ? "First execution completed successfully. Worker is now ACTIVE and scheduled for automated runs."
+            : "Execution completed successfully",
+        executionId: result.executionId,
+        isFirstExecution,
+        status: isFirstExecution ? "ACTIVE" : worker.status,
+        scheduledInterval: isFirstExecution ? config.interval : undefined,
         isDryRun,
       });
-    } catch (executionError) {
-      // 8. Update execution to ERROR on failure
-      const duration = Date.now() - startTime;
-      const errorMessage = executionError instanceof Error ? executionError.message : String(executionError);
-      const errorStack = executionError instanceof Error ? executionError.stack : undefined;
-
-      await prisma.$transaction([
-        prisma.workerExecution.update({
-          where: { id: execution.id },
-          data: {
-            status: ExecutionStatus.ERROR,
-            affectedEmails,
-            emailCount: affectedEmails.length,
-            actionsPerformed: actionsPerformed as unknown as Prisma.InputJsonValue,
-            duration,
-            error: errorMessage,
-            errorStack,
-          },
-        }),
-        prisma.worker.update({
-          where: { id: workerId },
-          data: {
-            executionCount: { increment: 1 },
-            lastExecutedAt: new Date(),
-            lastExecutionStatus: ExecutionStatus.ERROR,
-          },
-        }),
-      ]);
-
+    } else {
       return Response.json(
         {
           message: "Execution failed",
-          executionId: execution.id,
-          error: errorMessage,
-          duration,
+          executionId: result.executionId,
+          error: result.error,
         },
         { status: 500 }
       );
