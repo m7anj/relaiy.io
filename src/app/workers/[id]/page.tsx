@@ -141,100 +141,80 @@ export default function WorkerDetailPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="text-slate-400">Loading...</div>
+      <div className="min-h-screen flex items-center justify-center bg-[#fafaf9]">
+        <div className="text-[#6b6b6b]">Loading...</div>
       </div>
     );
   }
 
   if (!worker) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="text-slate-400">Worker not found</div>
+      <div className="min-h-screen flex items-center justify-center bg-[#fafaf9]">
+        <div className="text-[#6b6b6b]">Worker not found</div>
       </div>
     );
   }
 
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case "ACTIVE":
-        return "bg-emerald-500";
-      case "DRAFT":
-        return "bg-amber-500";
-      case "PAUSED":
-        return "bg-blue-500";
-      case "STOPPED":
-        return "bg-slate-500";
-      default:
-        return "bg-slate-500";
-    }
-  };
-
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100">
-      <div className="max-w-6xl mx-auto px-6 py-12">
+    <div className="min-h-screen bg-[#fafaf9] py-16 px-6">
+      <div className="max-w-3xl mx-auto">
         <Link
           href="/workers"
-          className="inline-block text-sm text-slate-500 hover:text-slate-700 mb-6 transition-colors"
+          className="inline-block text-[#6b6b6b] hover:text-[#2c2c2c] mb-12 transition-colors text-sm"
         >
-          ← Back to Workers
+          ← Workers
         </Link>
 
         {/* Header */}
-        <div className="bg-white rounded-2xl shadow-lg p-8 mb-6">
-          <div className="flex items-start justify-between mb-6">
-            <div className="flex-1">
-              <div className="flex items-center gap-3 mb-2">
-                <h1 className="text-3xl font-bold text-slate-900">
-                  {worker.name}
-                </h1>
-                <div
-                  className={`w-3 h-3 rounded-full ${getStatusColor(
-                    worker.status
-                  )}`}
-                />
-                <span className="text-sm font-medium text-slate-600">
-                  {worker.status}
-                </span>
-              </div>
-              <p className="text-slate-600 mb-4">{worker.description}</p>
-              <div className="flex items-center gap-4 text-sm text-slate-500">
-                <span className="font-medium">Type: {worker.type}</span>
-                <span>•</span>
-                <span>{worker.executionCount} executions</span>
-                {worker.lastExecutedAt && (
-                  <>
-                    <span>•</span>
-                    <span>
-                      Last run:{" "}
-                      {new Date(worker.lastExecutedAt).toLocaleString()}
-                    </span>
-                  </>
-                )}
-              </div>
+        <div className="mb-12">
+          <div className="mb-8">
+            <div className="flex items-center gap-3 mb-2">
+              <h1 className="text-2xl font-medium text-[#2c2c2c]">
+                {worker.name}
+              </h1>
+              <span className="text-xs text-[#6b6b6b] px-2 py-0.5 border border-[#e5e5e5]">
+                {worker.status}
+              </span>
             </div>
+            <p className="text-[#6b6b6b] text-base">{worker.description}</p>
           </div>
 
           {/* Configuration */}
-          <div className="grid grid-cols-3 gap-4 p-4 bg-slate-50 rounded-xl mb-6">
+          <div className="grid grid-cols-2 gap-x-12 gap-y-6 py-6 border-t border-b border-[#e5e5e5] mb-8">
             <div>
-              <div className="text-xs text-slate-500 mb-1">Schedule</div>
-              <div className="font-medium text-slate-900">
+              <div className="text-[#6b6b6b] text-sm mb-1">Type</div>
+              <div className="text-[#2c2c2c]">{worker.type}</div>
+            </div>
+            <div>
+              <div className="text-[#6b6b6b] text-sm mb-1">Schedule</div>
+              <div className="text-[#2c2c2c]">
                 {worker.configuration.interval}
               </div>
             </div>
             <div>
-              <div className="text-xs text-slate-500 mb-1">Recipients</div>
-              <div className="font-medium text-slate-900">
+              <div className="text-[#6b6b6b] text-sm mb-1">Recipients</div>
+              <div className="text-[#2c2c2c] text-sm">
                 {worker.configuration.recipients.join(", ")}
               </div>
             </div>
             <div>
-              <div className="text-xs text-slate-500 mb-1">Style</div>
-              <div className="font-medium text-slate-900">
-                {worker.configuration.tone} • {worker.configuration.style}
+              <div className="text-[#6b6b6b] text-sm mb-1">Style</div>
+              <div className="text-[#2c2c2c]">
+                {worker.configuration.style}
               </div>
             </div>
+            <div>
+              <div className="text-[#6b6b6b] text-sm mb-1">Executions</div>
+              <div className="text-[#2c2c2c]">{worker.executionCount}</div>
+            </div>
+            {worker.lastExecutedAt && (
+              <div>
+                <div className="text-[#6b6b6b] text-sm mb-1">Last run</div>
+                <div className="text-[#2c2c2c]">
+                  {new Date(worker.lastExecutedAt).toLocaleString()}
+                </div>
+              </div>
+            )}
           </div>
 
           {/* Actions */}
@@ -243,9 +223,9 @@ export default function WorkerDetailPage() {
               <button
                 onClick={() => handleExecute(false)}
                 disabled={executing}
-                className="px-6 py-3 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition-all disabled:opacity-50 font-medium shadow-lg shadow-emerald-600/20"
+                className="px-5 py-2.5 bg-[#2c2c2c] text-white hover:bg-[#3c3c3c] transition-colors disabled:opacity-50 text-sm"
               >
-                {executing ? "Activating..." : "Activate & Send First Email"}
+                {executing ? "Activating..." : "Activate & send first email"}
               </button>
             )}
 
@@ -254,15 +234,15 @@ export default function WorkerDetailPage() {
                 <button
                   onClick={() => handleExecute(false)}
                   disabled={executing}
-                  className="px-6 py-3 bg-slate-900 text-white rounded-lg hover:bg-slate-800 transition-all disabled:opacity-50 font-medium"
+                  className="px-5 py-2.5 bg-[#2c2c2c] text-white hover:bg-[#3c3c3c] transition-colors disabled:opacity-50 text-sm"
                 >
-                  {executing ? "Executing..." : "Execute Now"}
+                  {executing ? "Executing..." : "Execute now"}
                 </button>
                 <button
                   onClick={() => handleUpdateStatus("PAUSED")}
-                  className="px-6 py-3 border border-slate-300 text-slate-700 rounded-lg hover:bg-slate-50 transition-colors font-medium"
+                  className="px-5 py-2.5 text-[#2c2c2c] hover:bg-[#f5f5f5] transition-colors text-sm"
                 >
-                  Pause Worker
+                  Pause
                 </button>
               </>
             )}
@@ -270,98 +250,74 @@ export default function WorkerDetailPage() {
             {worker.status === "PAUSED" && (
               <button
                 onClick={() => handleUpdateStatus("ACTIVE")}
-                className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-all font-medium"
+                className="px-5 py-2.5 bg-[#2c2c2c] text-white hover:bg-[#3c3c3c] transition-colors text-sm"
               >
-                Resume Worker
+                Resume
               </button>
             )}
 
             <Link
               href={`/workers/${workerId}/edit`}
-              className="px-6 py-3 border-2 border-slate-300 text-slate-700 rounded-lg hover:bg-slate-50 transition-colors font-medium inline-flex items-center gap-2"
+              className="px-5 py-2.5 text-[#2c2c2c] hover:bg-[#f5f5f5] transition-colors text-sm"
             >
-              <svg
-                className="w-4 h-4"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"
-                />
-              </svg>
-              Edit Configuration
+              Edit
             </Link>
 
             <button
               onClick={() => handleExecute(true)}
               disabled={executing}
-              className="px-6 py-3 border border-slate-300 text-slate-700 rounded-lg hover:bg-slate-50 transition-colors disabled:opacity-50 font-medium"
+              className="px-5 py-2.5 text-[#2c2c2c] hover:bg-[#f5f5f5] transition-colors disabled:opacity-50 text-sm"
             >
-              {executing ? "Running..." : "Test Run (Dry Run)"}
+              {executing ? "Running..." : "Test run"}
             </button>
 
             <button
               onClick={() => setShowDeleteConfirm(true)}
-              className="px-6 py-3 border border-red-300 text-red-600 rounded-lg hover:bg-red-50 transition-colors font-medium ml-auto"
+              className="px-5 py-2.5 text-[#6b6b6b] hover:text-[#2c2c2c] hover:bg-[#f5f5f5] transition-colors text-sm ml-auto"
             >
-              Delete Worker
+              Delete
             </button>
           </div>
         </div>
 
         {/* Execution Logs */}
-        <div className="bg-white rounded-2xl shadow-lg p-8">
-          <h2 className="text-xl font-bold text-slate-900 mb-6">
-            Execution History
+        <div className="mb-12">
+          <h2 className="text-lg font-medium text-[#2c2c2c] mb-6">
+            Execution history
           </h2>
 
           {executions.length === 0 ? (
-            <div className="text-center py-12 text-slate-500">
-              No executions yet. Run the worker to see logs here.
+            <div className="text-center py-12 text-[#6b6b6b] border border-[#e5e5e5] bg-white">
+              <p className="text-sm">No executions yet</p>
             </div>
           ) : (
-            <div className="space-y-3">
+            <div className="space-y-1">
               {executions.map((execution) => (
                 <div
                   key={execution.id}
-                  className="border border-slate-200 rounded-lg p-4 hover:border-slate-300 transition-colors"
+                  className="border-b border-[#e5e5e5] py-4"
                 >
                   <div className="flex items-start justify-between">
                     <div className="flex-1">
                       <div className="flex items-center gap-3 mb-2">
-                        <div
-                          className={`w-2 h-2 rounded-full ${
-                            execution.status === "SUCCESS"
-                              ? "bg-emerald-500"
-                              : execution.status === "ERROR"
-                              ? "bg-red-500"
-                              : "bg-blue-500 animate-pulse"
-                          }`}
-                        />
-                        <span className="font-medium text-slate-900">
+                        <span className="text-sm text-[#2c2c2c]">
                           {execution.status}
                         </span>
                         {execution.isDryRun && (
-                          <span className="px-2 py-0.5 text-xs bg-amber-100 text-amber-700 rounded-full">
-                            DRY RUN
+                          <span className="px-2 py-0.5 text-xs text-[#6b6b6b] border border-[#e5e5e5]">
+                            Dry run
                           </span>
                         )}
-                        <span className="text-sm text-slate-500">
+                        <span className="text-xs text-[#a3a3a3]">
                           {new Date(execution.executedAt).toLocaleString()}
                         </span>
                       </div>
-                      <div className="text-sm text-slate-600">
-                        {execution.emailCount} emails •{" "}
-                        {execution.duration
-                          ? `${execution.duration}ms`
-                          : "Duration unknown"}
+                      <div className="text-sm text-[#6b6b6b]">
+                        {execution.emailCount} emails
+                        {execution.duration && ` • ${execution.duration}ms`}
                       </div>
                       {execution.error && (
-                        <div className="mt-2 p-3 bg-red-50 border border-red-200 rounded text-sm text-red-700">
+                        <div className="mt-2 text-sm text-[#6b6b6b] border-l-2 border-[#e5e5e5] pl-3">
                           {execution.error}
                         </div>
                       )}
@@ -375,25 +331,25 @@ export default function WorkerDetailPage() {
 
         {/* Delete Confirmation Modal */}
         {showDeleteConfirm && (
-          <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 px-4">
-            <div className="bg-white rounded-2xl p-8 max-w-md w-full">
-              <h3 className="text-xl font-bold text-slate-900 mb-4">
-                Delete Worker?
+          <div className="fixed inset-0 bg-black/20 backdrop-blur-sm flex items-center justify-center z-50 px-4">
+            <div className="bg-white p-8 max-w-md w-full border border-[#e5e5e5] shadow-2xl">
+              <h3 className="text-lg font-medium text-[#2c2c2c] mb-3">
+                Delete worker
               </h3>
-              <p className="text-slate-600 mb-6">
+              <p className="text-[#6b6b6b] text-sm mb-6 leading-relaxed">
                 This will permanently delete "{worker.name}" and all execution
                 logs. This action cannot be undone.
               </p>
               <div className="flex gap-3">
                 <button
                   onClick={() => setShowDeleteConfirm(false)}
-                  className="flex-1 px-6 py-3 border border-slate-300 text-slate-700 rounded-lg hover:bg-slate-50 transition-colors font-medium"
+                  className="flex-1 px-5 py-2.5 border border-[#e5e5e5] text-[#2c2c2c] hover:bg-[#f5f5f5] transition-colors text-sm"
                 >
                   Cancel
                 </button>
                 <button
                   onClick={handleDelete}
-                  className="flex-1 px-6 py-3 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-all font-medium"
+                  className="flex-1 px-5 py-2.5 bg-[#2c2c2c] text-white hover:bg-[#3c3c3c] transition-colors text-sm"
                 >
                   Delete
                 </button>

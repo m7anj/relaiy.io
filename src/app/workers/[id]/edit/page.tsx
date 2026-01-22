@@ -165,89 +165,91 @@ export default function EditWorkerPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="text-slate-400">Loading...</div>
+      <div className="min-h-screen flex items-center justify-center bg-[#fafaf9]">
+        <div className="text-[#6b6b6b]">Loading...</div>
       </div>
     );
   }
 
   if (!worker) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="text-slate-400">Worker not found</div>
+      <div className="min-h-screen flex items-center justify-center bg-[#fafaf9]">
+        <div className="text-[#6b6b6b]">Worker not found</div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 py-12 px-6">
-      <div className="max-w-4xl mx-auto">
+    <div className="min-h-screen bg-[#fafaf9] py-16 px-6">
+      <div className="max-w-3xl mx-auto">
         <Link
           href={`/workers/${workerId}`}
-          className="inline-block text-sm text-slate-500 hover:text-slate-700 mb-6 transition-colors"
+          className="inline-block text-[#6b6b6b] hover:text-[#2c2c2c] mb-12 transition-colors text-sm"
         >
-          ← Back to Worker
+          ← Worker
         </Link>
 
-        <div className="bg-white rounded-2xl shadow-lg p-8">
-          <h1 className="text-3xl font-bold text-slate-900 mb-2">
-            Edit Worker
+        <div className="mb-12">
+          <h1 className="text-2xl font-medium text-[#2c2c2c] mb-2">
+            Edit worker
           </h1>
-          <p className="text-slate-600 mb-8">
+          <p className="text-[#6b6b6b] text-base">
             Update your worker configuration
           </p>
+        </div>
 
+        <div className="space-y-12">
           {/* Worker Type Display (Read-only) */}
-          <div className="mb-6 p-4 bg-slate-50 rounded-lg border border-slate-200">
-            <div className="text-xs text-slate-500 mb-1">Worker Type (cannot be changed)</div>
-            <div className="font-medium text-slate-900">{worker.type}</div>
+          <div className="p-4 border border-[#e5e5e5] bg-[#f5f5f5]">
+            <div className="text-xs text-[#a3a3a3] mb-1">Worker type (cannot be changed)</div>
+            <div className="text-sm text-[#2c2c2c]">{worker.type}</div>
           </div>
 
           {/* Name Input */}
-          <div className="mb-6">
-            <label className="block text-sm font-medium text-slate-700 mb-2">
-              Worker Name
+          <div>
+            <label className="block text-[#6b6b6b] text-sm mb-3">
+              Name
             </label>
             <input
               type="text"
               value={name}
               onChange={(e) => setName(e.target.value)}
-              placeholder="e.g., Weekly Client Check-in"
-              className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-slate-900 focus:border-transparent"
+              placeholder="Weekly client check-in"
+              className="w-full px-0 py-2 border-b border-[#e5e5e5] focus:outline-none focus:border-[#2c2c2c] bg-transparent text-[#2c2c2c] placeholder:text-[#a3a3a3] transition-colors"
             />
           </div>
 
           {/* Description Input */}
-          <div className="mb-6">
-            <label className="block text-sm font-medium text-slate-700 mb-2">
-              What should this worker do?
+          <div>
+            <label className="block text-[#6b6b6b] text-sm mb-3">
+              Description
             </label>
             <textarea
               value={description}
               onChange={(e) => setDescription(e.target.value)}
-              placeholder="Describe in plain English what you want this worker to do."
+              placeholder="Describe what this worker should do"
               rows={4}
-              className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-slate-900 focus:border-transparent resize-none"
+              className="w-full px-0 py-2 border-b border-[#e5e5e5] focus:outline-none focus:border-[#2c2c2c] bg-transparent text-[#2c2c2c] placeholder:text-[#a3a3a3] resize-none transition-colors leading-relaxed"
             />
           </div>
 
           {/* Recipients Selection - Tag Input */}
-          <div className="mb-6">
-            <label className="block text-sm font-medium text-slate-700 mb-2">
-              Recipients <span className="text-red-500">*</span>
+          <div>
+            <label className="block text-[#6b6b6b] text-sm mb-3">
+              Recipients
             </label>
 
             {recipients.length > 0 && (
-              <div className="flex flex-wrap gap-2 mb-3 p-3 border border-slate-200 rounded-lg bg-slate-50">
+              <div className="flex flex-wrap gap-2 mb-3">
                 {recipients.map((email) => (
                   <div
                     key={email}
-                    className="inline-flex items-center gap-2 px-3 py-1 bg-white border border-slate-300 rounded-full text-sm shadow-sm"
+                    className="inline-flex items-center gap-2 px-3 py-1 bg-[#f5f5f5] text-[#2c2c2c] text-sm"
                   >
                     <span>{email}</span>
                     <button
                       onClick={() => removeRecipient(email)}
-                      className="text-slate-500 hover:text-red-600 font-bold"
+                      className="text-[#6b6b6b] hover:text-[#2c2c2c]"
                       type="button"
                     >
                       ×
@@ -257,45 +259,43 @@ export default function EditWorkerPage() {
               </div>
             )}
 
-            <div>
-              <input
-                type="text"
-                value={recipientInput}
-                onChange={(e) => setRecipientInput(e.target.value)}
-                onKeyDown={handleRecipientKeyDown}
-                placeholder="Enter email address and press Enter to add"
-                className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-slate-900 focus:border-transparent"
-              />
-              <p className="text-xs text-slate-500 mt-2">
-                Press Enter after typing each email address to add it as a tag
-              </p>
-            </div>
+            <input
+              type="text"
+              value={recipientInput}
+              onChange={(e) => setRecipientInput(e.target.value)}
+              onKeyDown={handleRecipientKeyDown}
+              placeholder="name@example.com"
+              className="w-full px-0 py-2 border-b border-[#e5e5e5] focus:outline-none focus:border-[#2c2c2c] bg-transparent text-[#2c2c2c] placeholder:text-[#a3a3a3] transition-colors"
+            />
+            <p className="text-xs text-[#6b6b6b] mt-2">
+              Press Enter to add
+            </p>
           </div>
 
           {/* Additional Context - File Upload */}
-          <div className="mb-8">
-            <label className="block text-sm font-medium text-slate-700 mb-2">
-              Additional Context <span className="text-slate-400">(optional)</span>
+          <div>
+            <label className="block text-[#6b6b6b] text-sm mb-3">
+              Context <span className="text-[#a3a3a3]">(optional)</span>
             </label>
 
             {uploadedFiles.length > 0 && (
-              <div className="mb-3 space-y-2">
+              <div className="mb-4 space-y-2">
                 {uploadedFiles.map((file) => (
                   <div
                     key={file.name}
-                    className="flex items-center justify-between p-3 bg-slate-50 border border-slate-200 rounded-lg"
+                    className="flex items-center justify-between py-2 border-b border-[#e5e5e5]"
                   >
                     <div className="flex-1">
-                      <p className="text-sm font-medium text-slate-900">
+                      <p className="text-sm text-[#2c2c2c]">
                         {file.name}
                       </p>
-                      <p className="text-xs text-slate-500">
-                        {file.size.toLocaleString()} characters
+                      <p className="text-xs text-[#6b6b6b]">
+                        {file.size.toLocaleString()} chars
                       </p>
                     </div>
                     <button
                       onClick={() => removeFile(file.name)}
-                      className="ml-3 text-red-500 hover:text-red-700 font-bold"
+                      className="ml-3 text-[#6b6b6b] hover:text-[#2c2c2c]"
                       type="button"
                     >
                       ×
@@ -305,7 +305,7 @@ export default function EditWorkerPage() {
               </div>
             )}
 
-            <div className="border-2 border-dashed border-slate-300 rounded-lg p-6 text-center hover:border-slate-400 transition-colors">
+            <div className="border border-dashed border-[#e5e5e5] p-8 text-center hover:border-[#2c2c2c] transition-colors cursor-pointer">
               <input
                 type="file"
                 id="context-files"
@@ -318,35 +318,34 @@ export default function EditWorkerPage() {
                 htmlFor="context-files"
                 className="cursor-pointer block"
               >
-                <div className="text-4xl mb-2">📄</div>
-                <p className="text-sm font-medium text-slate-700 mb-1">
-                  Click to upload context files
+                <p className="text-sm text-[#6b6b6b] mb-1">
+                  Upload files
                 </p>
-                <p className="text-xs text-slate-500">
-                  Max 10,000 characters per file
+                <p className="text-xs text-[#a3a3a3]">
+                  10,000 character limit per file
                 </p>
               </label>
             </div>
           </div>
 
           {/* Save Button */}
-          <div className="flex gap-3">
+          <div className="flex gap-3 pt-8">
             <Link
               href={`/workers/${workerId}`}
-              className="px-6 py-3 border border-slate-300 text-slate-700 rounded-lg hover:bg-slate-50 transition-colors font-medium text-center"
+              className="px-5 py-2.5 text-[#2c2c2c] hover:bg-[#f5f5f5] transition-colors text-sm"
             >
               Cancel
             </Link>
             <button
               onClick={handleSave}
               disabled={!name || !description || recipients.length === 0 || saving}
-              className={`flex-1 px-6 py-4 rounded-lg font-medium transition-all ${
+              className={`flex-1 px-5 py-2.5 text-sm transition-colors ${
                 !name || !description || recipients.length === 0 || saving
-                  ? "bg-slate-300 text-slate-500 cursor-not-allowed"
-                  : "bg-slate-900 text-white hover:bg-slate-800 hover:scale-[1.02] active:scale-95 shadow-lg shadow-slate-900/20"
+                  ? "bg-[#e5e5e5] text-[#a3a3a3] cursor-not-allowed"
+                  : "bg-[#2c2c2c] text-white hover:bg-[#3c3c3c]"
               }`}
             >
-              {saving ? "Saving..." : "Save Changes"}
+              {saving ? "Saving..." : "Save changes"}
             </button>
           </div>
         </div>

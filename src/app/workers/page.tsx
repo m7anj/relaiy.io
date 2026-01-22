@@ -47,31 +47,16 @@ export default function WorkersPage() {
     }
   };
 
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case "ACTIVE":
-        return "bg-emerald-500/10 text-emerald-600 border-emerald-500/20";
-      case "DRAFT":
-        return "bg-amber-500/10 text-amber-600 border-amber-500/20";
-      case "PAUSED":
-        return "bg-blue-500/10 text-blue-600 border-blue-500/20";
-      case "STOPPED":
-        return "bg-slate-500/10 text-slate-600 border-slate-500/20";
-      default:
-        return "bg-slate-500/10 text-slate-600 border-slate-500/20";
-    }
-  };
-
   const getTypeLabel = (type: string) => {
     switch (type) {
       case "OUTREACH":
-        return "📧 Outreach";
+        return "Outreach";
       case "NURTURE":
-        return "🤝 Nurture";
+        return "Nurture";
       case "RESPONDER":
-        return "↩️ Responder";
+        return "Responder";
       case "DIGEST":
-        return "📊 Digest";
+        return "Digest";
       default:
         return type;
     }
@@ -79,86 +64,81 @@ export default function WorkersPage() {
 
   if (status === "loading" || loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="text-slate-400">Loading...</div>
+      <div className="min-h-screen flex items-center justify-center bg-[#fafaf9]">
+        <div className="text-[#6b6b6b]">Loading...</div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100">
-      <div className="max-w-6xl mx-auto px-6 py-12">
+    <div className="min-h-screen bg-[#fafaf9] py-16 px-6">
+      <div className="max-w-3xl mx-auto">
         {/* Header */}
         <div className="mb-12">
           <Link
             href="/"
-            className="inline-block text-sm text-slate-500 hover:text-slate-700 mb-4 transition-colors"
+            className="inline-block text-[#6b6b6b] hover:text-[#2c2c2c] mb-12 transition-colors text-sm"
           >
-            ← Back
+            ← Home
           </Link>
           <div className="flex items-end justify-between">
             <div>
-              <h1 className="text-4xl font-bold text-slate-900 mb-2">
+              <h1 className="text-2xl font-medium text-[#2c2c2c] mb-2">
                 Workers
               </h1>
-              <p className="text-slate-600">
+              <p className="text-[#6b6b6b] text-base">
                 Email automation agents that run on schedule
               </p>
             </div>
             <Link
               href="/workers/new"
-              className="px-6 py-3 bg-slate-900 text-white rounded-lg hover:bg-slate-800 transition-all hover:scale-105 active:scale-95 font-medium shadow-lg shadow-slate-900/20"
+              className="px-5 py-2.5 bg-[#2c2c2c] text-white hover:bg-[#3c3c3c] transition-colors text-sm"
             >
-              Create Worker
+              Create worker
             </Link>
           </div>
         </div>
 
         {/* Workers Grid */}
         {workers.length === 0 ? (
-          <div className="text-center py-20 bg-white rounded-2xl border border-slate-200">
-            <div className="text-6xl mb-4">🤖</div>
-            <h3 className="text-xl font-semibold text-slate-900 mb-2">
+          <div className="text-center py-20 border border-[#e5e5e5] bg-white">
+            <h3 className="text-lg font-medium text-[#2c2c2c] mb-2">
               No workers yet
             </h3>
-            <p className="text-slate-600 mb-6">
+            <p className="text-[#6b6b6b] mb-6 text-sm">
               Create your first automation worker to get started
             </p>
             <Link
               href="/workers/new"
-              className="inline-block px-6 py-3 bg-slate-900 text-white rounded-lg hover:bg-slate-800 transition-colors font-medium"
+              className="inline-block px-5 py-2.5 bg-[#2c2c2c] text-white hover:bg-[#3c3c3c] transition-colors text-sm"
             >
-              Create Your First Worker
+              Create worker
             </Link>
           </div>
         ) : (
-          <div className="grid gap-4">
+          <div className="space-y-1">
             {workers.map((worker) => (
               <Link
                 key={worker.id}
                 href={`/workers/${worker.id}`}
                 className="group block"
               >
-                <div className="bg-white border border-slate-200 rounded-xl p-6 hover:border-slate-300 hover:shadow-lg hover:shadow-slate-200/50 transition-all">
-                  <div className="flex items-start justify-between mb-4">
+                <div className="border-b border-[#e5e5e5] py-6 hover:bg-[#f5f5f5] transition-colors px-4">
+                  <div className="flex items-start justify-between">
                     <div className="flex-1">
                       <div className="flex items-center gap-3 mb-2">
-                        <h3 className="text-xl font-semibold text-slate-900 group-hover:text-slate-700 transition-colors">
+                        <h3 className="text-base font-medium text-[#2c2c2c]">
                           {worker.name}
                         </h3>
-                        <span
-                          className={`px-3 py-1 text-xs font-medium rounded-full border ${getStatusColor(
-                            worker.status
-                          )}`}
-                        >
+                        <span className="text-xs text-[#6b6b6b] px-2 py-0.5 border border-[#e5e5e5]">
                           {worker.status}
                         </span>
                       </div>
-                      <p className="text-slate-600 text-sm mb-3">
+                      <p className="text-[#6b6b6b] text-sm mb-3">
                         {worker.description}
                       </p>
-                      <div className="flex items-center gap-4 text-xs text-slate-500">
-                        <span className="font-medium">
+                      <div className="flex items-center gap-3 text-xs text-[#a3a3a3]">
+                        <span>
                           {getTypeLabel(worker.type)}
                         </span>
                         <span>•</span>
@@ -167,36 +147,14 @@ export default function WorkersPage() {
                           <>
                             <span>•</span>
                             <span>
-                              Last run:{" "}
                               {new Date(worker.lastExecutedAt).toLocaleDateString()}
                             </span>
                           </>
                         )}
                       </div>
                     </div>
-                    <div className="flex items-center gap-2">
-                      {worker.lastExecutionStatus === "SUCCESS" && (
-                        <div className="w-2 h-2 bg-emerald-500 rounded-full" />
-                      )}
-                      {worker.lastExecutionStatus === "ERROR" && (
-                        <div className="w-2 h-2 bg-red-500 rounded-full" />
-                      )}
-                      {worker.lastExecutionStatus === "RUNNING" && (
-                        <div className="w-2 h-2 bg-blue-500 rounded-full animate-pulse" />
-                      )}
-                      <svg
-                        className="w-5 h-5 text-slate-400 group-hover:text-slate-600 group-hover:translate-x-1 transition-all"
-                        fill="none"
-                        viewBox="0 0 24 24"
-                        stroke="currentColor"
-                      >
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth={2}
-                          d="M9 5l7 7-7 7"
-                        />
-                      </svg>
+                    <div className="text-[#a3a3a3] group-hover:text-[#2c2c2c] transition-colors">
+                      →
                     </div>
                   </div>
                 </div>

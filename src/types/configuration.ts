@@ -12,8 +12,9 @@ export interface Configuration {
 
   // LLM instructions
   tone?: string;                        // "professional", "casual", "friendly", "formal"
-  style?: string;                       // "brief", "detailed", "creative"
+  style?: string;                       // "super-human", "professional", "concise"
   customInstructions?: string;          // additional free-form instructions
+  senderName?: string;                  // name of the sender to mention in emails
 
   // Email settings
   subjectTemplate?: string | null;     // subject line template (null = LLM decides)

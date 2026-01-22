@@ -20,7 +20,7 @@ export async function POST(req: Request) {
 
   try {
     // 3. Parse request body
-    const { description, type, name, context, recipients } = await req.json();
+    const { description, type, name, context, recipients, senderName, confirmShortInterval } = await req.json();
 
     if (!description || !type) {
       return Response.json(
@@ -42,6 +42,30 @@ export async function POST(req: Request) {
     // Override recipients if provided by user
     if (recipients && recipients.length > 0) {
       configuration.recipients = recipients;
+    }
+
+    // Store sender name in configuration
+    if (senderName) {
+      configuration.senderName = senderName;
+    }
+
+    // Check if interval is less than 1 minute
+    const intervalLowerCase = configuration.interval.toLowerCase();
+    const isShortInterval =
+      intervalLowerCase.includes('second') ||
+      (intervalLowerCase.match(/every (\d+) minute/) && parseInt(intervalLowerCase.match(/every (\d+) minute/)?.[1] || '1') < 1);
+
+    if (isShortInterval && !confirmShortInterval) {
+      return Response.json({
+        requiresConfirmation: true,
+        message: "Scheduling intervals less than 1 minute will be rounded up to 1 minute. Are you sure you want to continue?",
+        detectedInterval: configuration.interval,
+      }, { status: 200 });
+    }
+
+    // If confirmed or interval is fine, adjust short intervals to 1 minute
+    if (isShortInterval && confirmShortInterval) {
+      configuration.interval = "every 1 minute";
     }
 
     // 5. Fetch context emails if configured

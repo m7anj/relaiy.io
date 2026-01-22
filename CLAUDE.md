@@ -1,3 +1,5 @@
+
+### TODO / Incomplete
 # CLAUDE.md - Relaiy.io Project Guide
 
 ## Project Overview
@@ -16,52 +18,6 @@ Relaiy is a Gmail automation platform that lets users describe email workflows i
 - **Email:** Gmail API via `googleapis`
 - **Validation:** Zod for schema validation
 - **Styling:** Tailwind CSS v4
-
-## Directory Structure
-
-```
-src/
-├── app/
-│   ├── api/
-│   │   ├── auth/
-│   │   │   ├── [...nextauth]/route.ts  # NextAuth handler
-│   │   │   └── gmail/
-│   │   │       ├── route.ts            # Gmail OAuth initiation
-│   │   │       └── callback/route.ts   # Gmail OAuth callback
-│   │   ├── gmail/
-│   │   │   └── messages/route.ts       # Fetch Gmail messages
-│   │   ├── scheduler/
-│   │   │   └── init/route.ts           # GET/POST: Scheduler init & status
-│   │   └── workers/
-│   │       ├── route.ts                # GET: List workers
-│   │       ├── create/route.ts         # POST: Create new worker
-│   │       └── [id]/
-│   │           ├── route.ts            # GET/PATCH/DELETE worker
-│   │           ├── execute/route.ts    # POST: Execute worker (manual/first run)
-│   │           └── logs/route.ts       # GET/POST: Worker execution logs
-│   ├── types.ts                        # (empty - use src/types instead)
-│   └── instrumentation.ts              # Server startup hook - initializes scheduler
-├── lib/
-│   ├── auth.ts         # getAuthenticatedUser() helper
-│   ├── creation.ts     # generateWorkerConfig() - LLM config generation
-│   ├── gmail.ts        # Gmail API utilities (fetch, send)
-│   ├── prisma.ts       # Prisma client singleton
-│   ├── scheduler.ts    # Cron scheduler for automated worker execution
-│   ├── preview.ts      # generateEmailPreviews() - Preview email generation
-│   └── dryrun.ts       # simulateSendEmail() - Dry run simulation
-├── types/
-│   ├── index.ts        # Central type exports
-│   ├── worker.ts       # Worker, WorkerStatus, WorkerType, ExecutionStatus
-│   ├── workerTypes.ts  # WORKER_TYPE_CONFIGS, system prompts, defaults
-│   ├── configuration.ts # Configuration interface
-│   └── next-auth.d.ts  # NextAuth type extensions
-└── generated/
-    └── prisma/         # Generated Prisma client
-prisma/
-└── schema.prisma       # Database schema
-```
-
-## Type System
 
 ### Worker Types (WorkerType enum)
 - `OUTREACH` - Cold emails with clear CTAs
@@ -216,27 +172,6 @@ NEXTAUTH_SECRET=        # NextAuth secret
 NEXTAUTH_URL=           # App URL (http://localhost:3000 for dev)
 ```
 
-## Implementation Status
-
-### Completed
-- [x] NextAuth with Google OAuth + Gmail scopes
-- [x] Prisma schema with User, Worker, WorkerExecution
-- [x] Worker creation with LLM config generation
-- [x] Gmail API integration (fetch, send)
-- [x] Type system for workers and configurations
-- [x] Auth helper (`getAuthenticatedUser`)
-- [x] All Worker CRUD endpoints (GET/POST/PATCH/DELETE)
-- [x] Execution logs endpoints (GET/POST)
-- [x] Dry run simulation (`src/lib/dryrun.ts`)
-- [x] Preview email generation (`src/lib/preview.ts`)
-- [x] Execution logging to WorkerExecution table
-- [x] Automatic preview generation on worker creation
-- [x] **Worker execution scheduling (cron jobs)**
-- [x] **Status transitions (DRAFT → ACTIVE on first execution)**
-- [x] **Automatic lifespan checking and worker stopping**
-- [x] **Scheduler integration with PATCH/DELETE endpoints**
-
-### TODO / Incomplete
 - [ ] Frontend UI (pages/components)
 - [ ] User-configurable timezone for scheduling
 - [ ] Enhanced LLM email generation (currently uses placeholder templates)
@@ -357,3 +292,51 @@ Workers are automatically registered/unregistered with the scheduler:
 - Gmail API requires specific scopes: `gmail.modify`, `gmail.send`
 - Access tokens stored in `Account` table, refreshed via NextAuth callbacks
 - Worker `configuration` stored as JSON in PostgreSQL
+
+
+---
+# SYSTEM BEHAVIOUR - Frontend Development
+
+Use the frontend-design skill.
+
+description: Create distinctive, production-grade frontend interfaces with high design quality. Use this skill when the user asks to build web components, pages, or applications. Generates creative, polished code that avoids generic AI aesthetics.
+license: Complete terms in LICENSE.txt
+---
+
+This skill guides creation of distinctive, production-grade frontend interfaces that avoid generic "AI slop" aesthetics. Implement real working code with exceptional attention to aesthetic details and creative choices.
+
+The user provides frontend requirements: a component, page, application, or interface to build. They may include context about the purpose, audience, or technical constraints.
+
+## Design Thinking
+
+Before coding, understand the context and commit to a BOLD aesthetic direction:
+- **Purpose**: What problem does this interface solve? Who uses it?
+- **Tone**: Pick an extreme: brutally minimal, maximalist chaos, retro-futuristic, organic/natural, luxury/refined, playful/toy-like, editorial/magazine, brutalist/raw, art deco/geometric, soft/pastel, industrial/utilitarian, etc. There are so many flavors to choose from. Use these for inspiration but design one that is true to the aesthetic direction.
+- **Constraints**: Technical requirements (framework, performance, accessibility).
+- **Differentiation**: What makes this UNFORGETTABLE? What's the one thing someone will remember?
+
+**CRITICAL**: Choose a clear conceptual direction and execute it with precision. Bold maximalism and refined minimalism both work - the key is intentionality, not intensity.
+
+Then implement working code (HTML/CSS/JS, React, Vue, etc.) that is:
+- Production-grade and functional
+- Visually striking and memorable
+- Cohesive with a clear aesthetic point-of-view
+- Meticulously refined in every detail
+
+## Frontend Aesthetics Guidelines
+
+Focus on:
+- **Typography**: Choose fonts that are beautiful, unique, and interesting. Avoid generic fonts like Arial and Inter; opt instead for distinctive choices that elevate the frontend's aesthetics; unexpected, characterful font choices. Pair a distinctive display font with a refined body font.
+- **Color & Theme**: Commit to a cohesive aesthetic. Use CSS variables for consistency. Dominant colors with sharp accents outperform timid, evenly-distributed palettes.
+- **Motion**: Use animations for effects and micro-interactions. Prioritize CSS-only solutions for HTML. Use Motion library for React when available. Focus on high-impact moments: one well-orchestrated page load with staggered reveals (animation-delay) creates more delight than scattered micro-interactions. Use scroll-triggering and hover states that surprise.
+- **Spatial Composition**: Unexpected layouts. Asymmetry. Overlap. Diagonal flow. Grid-breaking elements. Generous negative space OR controlled density.
+- **Backgrounds & Visual Details**: Create atmosphere and depth rather than defaulting to solid colors. Add contextual effects and textures that match the overall aesthetic. Apply creative forms like gradient meshes, noise textures, geometric patterns, layered transparencies, dramatic shadows, decorative borders, custom cursors, and grain overlays.
+
+NEVER use generic AI-generated aesthetics like overused font families (Inter, Roboto, Arial, system fonts), cliched color schemes (particularly purple gradients on white backgrounds), predictable layouts and component patterns, and cookie-cutter design that lacks context-specific character.
+
+Interpret creatively and make unexpected choices that feel genuinely designed for the context. No design should be the same. Vary between light and dark themes, different fonts, different aesthetics. NEVER converge on common choices (Space Grotesk, for example) across generations.
+
+**IMPORTANT**: Match implementation complexity to the aesthetic vision. Maximalist designs need elaborate code with extensive animations and effects. Minimalist or refined designs need restraint, precision, and careful attention to spacing, typography, and subtle details. Elegance comes from executing the vision well.
+
+Remember: Claude is capable of extraordinary creative work. Don't hold back, show what can truly be created when thinking outside the box and committing fully to a distinctive vision.
+

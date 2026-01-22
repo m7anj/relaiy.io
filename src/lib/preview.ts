@@ -35,24 +35,37 @@ export async function generateEmailPreviews(
       : 'No context emails provided.';
 
     // Build conversation history for this recipient
-    const recipientHistory = conversationHistory?.filter(h => h.recipient === recipient) || [];
+    const recipientHistory = conversationHistory?.filter(h =>
+      h.recipient === recipient || h.recipient.includes(recipient)
+    ) || [];
+
     const historyInfo = recipientHistory.length > 0
       ? `
-Previous emails sent to ${recipient}:
-${recipientHistory.map((h, i) => `
-Email ${i + 1} (sent ${new Date(h.sentAt).toLocaleDateString()}):
+CONVERSATION HISTORY with ${recipient}:
+${recipientHistory.map((h, i) => {
+  // Try to determine if this was sent by you or received from them
+  const direction = h.body.includes(config.senderName || '') ? 'YOU sent' : 'THEY sent';
+  return `
+${direction} (${new Date(h.sentAt).toLocaleDateString()}):
 Subject: ${h.subject}
-Body: ${h.body}
-`).join('\n---\n')}
+Body: ${h.body.substring(0, 500)}${h.body.length > 500 ? '...' : ''}
+`;
+}).join('\n---\n')}
 
-IMPORTANT: This is email #${recipientHistory.length + 1} in the conversation. Vary the content, approach, and phrasing to avoid repetition. Reference or build upon previous emails naturally if appropriate for the worker type.`
-      : `This is the first email to ${recipient}.`;
+IMPORTANT: This is email #${recipientHistory.length + 1} in the conversation.
+- Pay attention to what THEY said in their responses
+- Reference their questions, concerns, or comments naturally
+- Vary the content, approach, and phrasing to avoid repetition
+- Build upon the conversation thread contextually
+- If they haven't responded yet, try a different angle or approach`
+      : `This is the first email to ${recipient} in this conversation thread.`;
 
     const userPrompt = `
 Generate an email with the following requirements:
 - Recipient: ${recipient}
+${config.senderName ? `- Sender Name: ${config.senderName} (use this for personalization and signatures)` : ''}
 - Tone: ${config.tone || "professional"}
-- Style: ${config.style || "brief"}
+- Style: ${config.style || "professional"}
 - Custom Instructions: ${config.customInstructions || "None"}
 ${config.subjectTemplate ? `- Subject Template: ${config.subjectTemplate}` : '- Generate an appropriate subject line'}
 
@@ -105,48 +118,76 @@ Return a JSON object with:
 
 function getSystemPromptForType(type: WorkerType): string {
   const prompts: Record<WorkerType, string> = {
-    [WorkerType.OUTREACH]: `You are an expert at writing cold outreach emails. Generate professional, clear emails that:
+    [WorkerType.OUTREACH]: `You are an expert at writing cold outreach emails.
+
+STYLE GUIDELINES:
+- "super-human": Exceptionally polished, warm yet professional, uses perfect structure and compelling language
+- "professional": Clear, business-appropriate, focused and effective
+- "concise": Brief, direct, gets to the point quickly
+
+Generate emails that:
 - Have a clear value proposition
 - Include a specific call-to-action
-- Are concise and respectful of the recipient's time
+- Are respectful of the recipient's time
 - Avoid being overly salesy or aggressive
 
-CRITICAL: If previous emails are provided, you MUST vary your approach:
+CRITICAL: If previous emails or responses are provided, you MUST:
+- Pay close attention to what the recipient said in their replies
+- Address their questions, concerns, or objections directly
 - Use different opening lines and hooks
 - Vary your value propositions and angles
-- Reference previous touchpoints naturally
 - Try different CTAs if previous ones haven't been answered
-- Adjust tone based on lack of response (slightly more direct or different angle)`,
+- Adjust tone based on their responses or lack thereof`,
 
-    [WorkerType.NURTURE]: `You are an expert at writing relationship-building emails. Generate warm, conversational emails that:
+    [WorkerType.NURTURE]: `You are an expert at writing relationship-building emails.
+
+STYLE GUIDELINES:
+- "super-human": Exceptionally warm, shows genuine care, perfectly personalized
+- "professional": Friendly yet appropriate, maintains professional boundaries
+- "concise": Brief check-ins, warm but efficient
+
+Generate emails that:
 - Maintain existing relationships
 - Show genuine interest and care
 - Include personal touches when appropriate
 - Are friendly without being too informal
 
-CRITICAL: If previous emails are provided, you MUST create natural progression:
-- Reference or acknowledge previous conversations naturally
+CRITICAL: If previous emails or responses are provided, you MUST:
+- Reference what they shared in their replies
+- Acknowledge their updates, concerns, or news
 - Vary topics and questions to keep engagement fresh
-- Show you remember past interactions
-- Build on previous discussions organically
+- Show you remember past interactions and build on them
+- Respond to their questions or comments naturally
 - Avoid repeating the same greetings or sign-offs`,
 
-    [WorkerType.RESPONDER]: `You are an expert at writing automated responses. Generate helpful, timely responses that:
+    [WorkerType.RESPONDER]: `You are an expert at writing automated responses.
+
+STYLE GUIDELINES:
+- "super-human": Exceptionally helpful, anticipates needs, warm and thorough
+- "professional": Clear, efficient, appropriately formal
+- "concise": Quick acknowledgment, brief next steps
+
+Generate responses that:
 - Address the recipient's likely concerns
 - Provide clear next steps or information
 - Maintain a helpful and professional tone
-- Are concise and to the point
 
 CRITICAL: If previous responses are provided, you MUST:
 - Ensure each response feels contextually appropriate
 - Vary phrasing and structure between responses
 - Maintain consistency in information while varying delivery`,
 
-    [WorkerType.DIGEST]: `You are an expert at writing email digests. Generate clear summaries that:
+    [WorkerType.DIGEST]: `You are an expert at writing email digests.
+
+STYLE GUIDELINES:
+- "super-human": Beautifully organized, insightful summaries with key takeaways
+- "professional": Clear structure, well-organized information
+- "concise": Bulleted highlights, scannable format
+
+Generate digests that:
 - Highlight key information from multiple sources
 - Are well-organized and scannable
 - Provide context when needed
-- Are concise and easy to read
 
 CRITICAL: If previous digests are provided, you MUST:
 - Vary the format and structure (bullets, numbered lists, sections)

@@ -2,6 +2,7 @@ import * as cron from 'node-cron';
 import { prisma } from './prisma';
 import { fetchEmailsFromRecipients, sendEmail, getGmailClient } from './gmail';
 import { generateEmailPreviews } from './preview';
+import { fetchConversationWithRecipients } from './conversationHistory';
 import { Configuration } from '@/types/configuration';
 import { WorkerType } from '@/types/worker';
 import { ExecutionStatus } from '@/generated/prisma';
@@ -218,7 +219,14 @@ export async function executeWorker(
         }
       }
 
-      // Fetch conversation history (previous emails sent)
+      // Fetch FULL conversation history with recipients (both sent and received emails)
+      const fullConversationHistory = await fetchConversationWithRecipients(
+        accessToken,
+        config.recipients,
+        20 // Get up to 20 most recent emails per recipient
+      );
+
+      // Also fetch previous worker execution emails for context
       const previousExecutions = await prisma.workerExecution.findMany({
         where: {
           workerId,
@@ -236,6 +244,8 @@ export async function executeWorker(
 
       // Extract previous emails from execution history
       const conversationHistory: Array<{ recipient: string; subject: string; body: string; sentAt: string }> = [];
+
+      // Add execution history
       for (const execution of previousExecutions) {
         const actions = execution.actionsPerformed as any[];
         if (Array.isArray(actions)) {
@@ -250,6 +260,16 @@ export async function executeWorker(
             }
           }
         }
+      }
+
+      // Add full Gmail conversation history (includes recipient responses!)
+      for (const email of fullConversationHistory) {
+        conversationHistory.push({
+          recipient: email.direction === 'sent' ? email.to : email.from,
+          subject: email.subject,
+          body: email.body,
+          sentAt: email.timestamp,
+        });
       }
 
       // Generate actual email content using LLM

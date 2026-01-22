@@ -72,6 +72,7 @@ export async function sendEmail(
     recipient: string[],
     subject: string,
     body: string,
+    
     dryRun: boolean = false,
 ) {
     const gmail = getGmailClient(accessToken);
