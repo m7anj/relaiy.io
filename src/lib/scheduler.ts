@@ -413,7 +413,6 @@ export function registerWorker(workerId: string, interval: string): boolean {
         }
       },
       {
-        scheduled: true,
         timezone: "UTC",
       }
     );

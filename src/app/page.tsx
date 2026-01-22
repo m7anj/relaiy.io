@@ -1,75 +1,129 @@
 "use client";
 
-import { signIn, useSession } from "next-auth/react";
-import { useRouter } from "next/navigation";
-import { useEffect } from "react";
+import { signIn, signOut, useSession } from "next-auth/react";
+import Link from "next/link";
 
 export default function Page() {
   const { data: session, status } = useSession();
-  const router = useRouter();
-
-  useEffect(() => {
-    if (status === "authenticated") {
-      router.push("/dashboard");
-    }
-  }, [status, router]);
 
   if (status === "loading") {
     return (
-      <div
-        className="min-h-screen flex items-center justify-center"
-        style={{ background: 'var(--color-bg-base)' }}
-      >
-        <div className="animate-pulse" style={{ color: 'var(--color-text-secondary)' }}>
-          Loading...
-        </div>
+      <div className="min-h-screen flex items-center justify-center" style={{ background: 'var(--bg-primary)' }}>
+        <div style={{ color: 'var(--text-secondary)' }}>Loading...</div>
       </div>
     );
   }
 
   if (session) {
-    return null; // Will redirect to dashboard
+    return (
+      <div className="min-h-screen py-16 px-6" style={{ background: 'var(--bg-primary)' }}>
+        <div className="max-w-3xl mx-auto">
+          <div className="flex items-center justify-between mb-16">
+            <div>
+              <h1 className="text-2xl font-semibold mb-2" style={{ color: 'var(--text-primary)' }}>
+                relaiy.io
+              </h1>
+              <p className="text-sm" style={{ color: 'var(--text-secondary)' }}>
+                Email automation, described in plain English
+              </p>
+            </div>
+            <button
+              onClick={() => signOut()}
+              className="text-sm transition-colors px-3 py-1.5"
+              style={{ color: 'var(--text-secondary)' }}
+              onMouseEnter={(e) => e.currentTarget.style.color = 'var(--text-primary)'}
+              onMouseLeave={(e) => e.currentTarget.style.color = 'var(--text-secondary)'}
+            >
+              Sign out
+            </button>
+          </div>
+
+          <div className="space-y-3 mb-12">
+            <Link
+              href="/workers"
+              className="group block border p-6 transition-all"
+              style={{
+                background: 'var(--bg-secondary)',
+                borderColor: 'var(--border-light)'
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.background = 'var(--bg-hover)';
+                e.currentTarget.style.borderColor = 'var(--border-medium)';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.background = 'var(--bg-secondary)';
+                e.currentTarget.style.borderColor = 'var(--border-light)';
+              }}
+            >
+              <h2 className="text-base font-semibold mb-1" style={{ color: 'var(--text-primary)' }}>
+                Workers
+              </h2>
+              <p className="text-sm mb-3" style={{ color: 'var(--text-secondary)' }}>
+                View and manage your email automation workers
+              </p>
+              <div className="text-sm transition-colors" style={{ color: 'var(--accent-green)' }}>
+                Open workers →
+              </div>
+            </Link>
+
+            <Link
+              href="/workers/new"
+              className="group block border p-6 transition-all"
+              style={{
+                background: 'var(--bg-secondary)',
+                borderColor: 'var(--border-light)'
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.background = 'var(--bg-hover)';
+                e.currentTarget.style.borderColor = 'var(--border-medium)';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.background = 'var(--bg-secondary)';
+                e.currentTarget.style.borderColor = 'var(--border-light)';
+              }}
+            >
+              <h2 className="text-base font-semibold mb-1" style={{ color: 'var(--text-primary)' }}>
+                Create worker
+              </h2>
+              <p className="text-sm mb-3" style={{ color: 'var(--text-secondary)' }}>
+                Describe your automation in plain English
+              </p>
+              <div className="text-sm transition-colors" style={{ color: 'var(--accent-green)' }}>
+                Get started →
+              </div>
+            </Link>
+          </div>
+
+          <div className="pt-6 border-t" style={{ borderColor: 'var(--border-light)' }}>
+            <div className="text-xs mb-1" style={{ color: 'var(--text-tertiary)' }}>
+              Signed in as
+            </div>
+            <div className="text-sm" style={{ color: 'var(--text-primary)' }}>
+              {session.user?.email}
+            </div>
+          </div>
+        </div>
+      </div>
+    );
   }
 
   return (
-    <div
-      className="min-h-screen flex items-center justify-center px-6"
-      style={{ background: 'var(--color-bg-base)' }}
-    >
-      <div className="text-center max-w-xl animate-fade-in">
-        <h1
-          className="text-6xl mb-4"
-          style={{
-            fontFamily: 'var(--font-display)',
-            color: 'var(--color-text-primary)',
-            fontWeight: 400,
-            letterSpacing: '-0.02em'
-          }}
-        >
-          relaiy
+    <div className="min-h-screen flex items-center justify-center px-6" style={{ background: 'var(--bg-primary)' }}>
+      <div className="text-center max-w-md">
+        <h1 className="text-4xl font-semibold mb-3" style={{ color: 'var(--text-primary)' }}>
+          relaiy.io
         </h1>
-        <p
-          className="text-xl mb-12 max-w-md mx-auto leading-relaxed"
-          style={{ color: 'var(--color-text-secondary)' }}
-        >
-          Email automation that understands plain English
+        <p className="text-base mb-8" style={{ color: 'var(--text-secondary)' }}>
+          Email automation that speaks your language
         </p>
         <button
           onClick={() => signIn("google")}
-          className="inline-flex items-center gap-3 px-8 py-4 rounded-full transition-all duration-200 text-base font-medium hover:scale-105 animate-slide-in-up stagger-2"
-          style={{
-            background: 'var(--color-accent-primary)',
-            color: 'white',
-            boxShadow: 'var(--shadow-md)'
-          }}
-          onMouseEnter={(e) => {
-            e.currentTarget.style.boxShadow = 'var(--shadow-lg)';
-          }}
-          onMouseLeave={(e) => {
-            e.currentTarget.style.boxShadow = 'var(--shadow-md)';
-          }}
+          className="inline-flex items-center gap-3 px-6 py-3 transition-all text-sm font-medium text-white"
+          style={{ background: 'var(--accent-green)' }}
+          onMouseEnter={(e) => e.currentTarget.style.background = 'var(--accent-green-hover)'}
+          onMouseLeave={(e) => e.currentTarget.style.background = 'var(--accent-green)'}
         >
-          <svg className="w-5 h-5" viewBox="0 0 24 24">
+          <svg className="w-4 h-4" viewBox="0 0 24 24">
             <path
               fill="currentColor"
               d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"

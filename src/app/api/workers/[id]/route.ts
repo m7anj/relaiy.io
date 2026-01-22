@@ -92,7 +92,7 @@ export async function PATCH(
         ...(body.description !== undefined && { description: body.description }),
         ...(body.status !== undefined && { status: body.status }),
         ...(body.information !== undefined && { information: body.information }),
-        ...(updatedConfiguration !== existingWorker.configuration && { configuration: updatedConfiguration }),
+        ...(updatedConfiguration !== existingWorker.configuration && { configuration: updatedConfiguration as any }),
       },
     });
 
