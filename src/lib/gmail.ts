@@ -79,12 +79,8 @@ export async function sendEmail(
     // STEP 1: Build RFC 2822 formatted email
     // RFC 2822 is the standard email format: headers followed by body
     // Each header is "Key: Value\r\n", then blank line, then body
-    const query =
-        recipient.map((recipient) => `from:${recipient}`)  // maps a .from:{} to every single email
-            .join(" OR ");  // joins them with OR to satsify the query
-
     const emailLines = [
-        `To: ${query}`,
+        `To: ${recipient.join(', ')}`,
         `Subject: ${subject}`,
         '', // blank line separates headers from body
         body

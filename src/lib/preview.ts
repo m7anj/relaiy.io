@@ -20,7 +20,8 @@ export async function generateEmailPreviews(
   config: Configuration,
   workerType: WorkerType,
   workerName: string,
-  contextEmails?: Array<{ snippet?: string; subject?: string }>
+  contextEmails?: Array<{ snippet?: string; subject?: string }>,
+  conversationHistory?: Array<{ recipient: string; subject: string; body: string; sentAt: string }>
 ): Promise<EmailPreview[]> {
   const previews: EmailPreview[] = [];
 
@@ -33,6 +34,20 @@ export async function generateEmailPreviews(
       ? `Context from recent emails:\n${contextEmails.map(e => `- ${e.subject}: ${e.snippet}`).join('\n')}`
       : 'No context emails provided.';
 
+    // Build conversation history for this recipient
+    const recipientHistory = conversationHistory?.filter(h => h.recipient === recipient) || [];
+    const historyInfo = recipientHistory.length > 0
+      ? `
+Previous emails sent to ${recipient}:
+${recipientHistory.map((h, i) => `
+Email ${i + 1} (sent ${new Date(h.sentAt).toLocaleDateString()}):
+Subject: ${h.subject}
+Body: ${h.body}
+`).join('\n---\n')}
+
+IMPORTANT: This is email #${recipientHistory.length + 1} in the conversation. Vary the content, approach, and phrasing to avoid repetition. Reference or build upon previous emails naturally if appropriate for the worker type.`
+      : `This is the first email to ${recipient}.`;
+
     const userPrompt = `
 Generate an email with the following requirements:
 - Recipient: ${recipient}
@@ -42,6 +57,8 @@ Generate an email with the following requirements:
 ${config.subjectTemplate ? `- Subject Template: ${config.subjectTemplate}` : '- Generate an appropriate subject line'}
 
 ${contextInfo}
+
+${historyInfo}
 
 Return a JSON object with:
 {
@@ -58,7 +75,8 @@ Return a JSON object with:
           { role: "user", content: userPrompt },
         ],
         response_format: { type: "json_object" },
-        temperature: 0.7,
+        // Higher temperature for more variation when history exists
+        temperature: recipientHistory.length > 0 ? 0.9 : 0.7,
       });
 
       const content = completion.choices[0].message.content;
@@ -91,25 +109,50 @@ function getSystemPromptForType(type: WorkerType): string {
 - Have a clear value proposition
 - Include a specific call-to-action
 - Are concise and respectful of the recipient's time
-- Avoid being overly salesy or aggressive`,
+- Avoid being overly salesy or aggressive
+
+CRITICAL: If previous emails are provided, you MUST vary your approach:
+- Use different opening lines and hooks
+- Vary your value propositions and angles
+- Reference previous touchpoints naturally
+- Try different CTAs if previous ones haven't been answered
+- Adjust tone based on lack of response (slightly more direct or different angle)`,
 
     [WorkerType.NURTURE]: `You are an expert at writing relationship-building emails. Generate warm, conversational emails that:
 - Maintain existing relationships
 - Show genuine interest and care
 - Include personal touches when appropriate
-- Are friendly without being too informal`,
+- Are friendly without being too informal
+
+CRITICAL: If previous emails are provided, you MUST create natural progression:
+- Reference or acknowledge previous conversations naturally
+- Vary topics and questions to keep engagement fresh
+- Show you remember past interactions
+- Build on previous discussions organically
+- Avoid repeating the same greetings or sign-offs`,
 
     [WorkerType.RESPONDER]: `You are an expert at writing automated responses. Generate helpful, timely responses that:
 - Address the recipient's likely concerns
 - Provide clear next steps or information
 - Maintain a helpful and professional tone
-- Are concise and to the point`,
+- Are concise and to the point
+
+CRITICAL: If previous responses are provided, you MUST:
+- Ensure each response feels contextually appropriate
+- Vary phrasing and structure between responses
+- Maintain consistency in information while varying delivery`,
 
     [WorkerType.DIGEST]: `You are an expert at writing email digests. Generate clear summaries that:
 - Highlight key information from multiple sources
 - Are well-organized and scannable
 - Provide context when needed
-- Are concise and easy to read`,
+- Are concise and easy to read
+
+CRITICAL: If previous digests are provided, you MUST:
+- Vary the format and structure (bullets, numbered lists, sections)
+- Use different section headers and organization methods
+- Adjust summary depth based on information density
+- Keep each digest feeling fresh and engaging`,
   };
 
   return prompts[type];

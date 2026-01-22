@@ -17,6 +17,7 @@ interface ExecutionAction {
   action: "email_sent" | "email_simulated";
   recipient: string;
   subject: string;
+  body: string;
   timestamp: string;
   result: "sent" | "dry_run";
 }
@@ -76,6 +77,24 @@ export function parseIntervalToCron(interval: string): string {
         return `0 9 * * ${num}`;
       }
     }
+  }
+
+  // Minute patterns (every N minutes)
+  if (normalized.match(/^every (\d+) minute(s)?$/)) {
+    const match = normalized.match(/^every (\d+) minute(s)?$/);
+    if (match) {
+      const minutes = parseInt(match[1]);
+      if (minutes >= 1 && minutes <= 59) {
+        return `*/${minutes} * * * *`;
+      }
+    }
+  }
+
+  // Second patterns (convert to minutes - cron doesn't support seconds)
+  // For testing: "every 10 seconds" -> run every minute
+  if (normalized.match(/^every (\d+) second(s)?$/)) {
+    console.warn(`Seconds not supported in cron. Converting "${interval}" to every minute.`);
+    return `* * * * *`; // Every minute
   }
 
   // Hourly patterns
@@ -199,12 +218,47 @@ export async function executeWorker(
         }
       }
 
+      // Fetch conversation history (previous emails sent)
+      const previousExecutions = await prisma.workerExecution.findMany({
+        where: {
+          workerId,
+          status: 'SUCCESS',
+        },
+        orderBy: {
+          executedAt: 'desc',
+        },
+        take: 5, // Last 5 successful executions
+        select: {
+          actionsPerformed: true,
+          executedAt: true,
+        },
+      });
+
+      // Extract previous emails from execution history
+      const conversationHistory: Array<{ recipient: string; subject: string; body: string; sentAt: string }> = [];
+      for (const execution of previousExecutions) {
+        const actions = execution.actionsPerformed as any[];
+        if (Array.isArray(actions)) {
+          for (const action of actions) {
+            if (action.action === 'email_sent' && action.recipient && action.subject && action.body) {
+              conversationHistory.push({
+                recipient: action.recipient,
+                subject: action.subject,
+                body: action.body,
+                sentAt: action.timestamp || execution.executedAt.toISOString(),
+              });
+            }
+          }
+        }
+      }
+
       // Generate actual email content using LLM
       const emailPreviews = await generateEmailPreviews(
         config,
         worker.type as WorkerType,
         worker.name,
-        contextEmails
+        contextEmails,
+        conversationHistory
       );
 
       // Send emails to recipients
@@ -221,6 +275,7 @@ export async function executeWorker(
           action: isDryRun ? 'email_simulated' : 'email_sent',
           recipient: emailPreview.recipient,
           subject: emailPreview.subject,
+          body: emailPreview.body,
           timestamp: new Date().toISOString(),
           result: isDryRun ? 'dry_run' : 'sent',
         });
@@ -327,14 +382,19 @@ export function registerWorker(workerId: string, interval: string): boolean {
     const task = cron.schedule(
       cronExpression,
       async () => {
-        console.log(`Executing scheduled worker: ${workerId}`);
+        const now = new Date().toISOString();
+        console.log(`[${now}] Cron triggered for worker: ${workerId}`);
         const result = await executeWorker(workerId, false);
 
         if (result.success) {
-          console.log(`Worker ${workerId} executed successfully. Execution ID: ${result.executionId}`);
+          console.log(`[${now}] Worker ${workerId} executed successfully. Execution ID: ${result.executionId}`);
         } else {
-          console.error(`Worker ${workerId} execution failed: ${result.error}`);
+          console.error(`[${now}] Worker ${workerId} execution failed: ${result.error}`);
         }
+      },
+      {
+        scheduled: true,
+        timezone: "UTC",
       }
     );
 
