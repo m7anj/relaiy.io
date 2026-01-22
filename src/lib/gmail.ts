@@ -101,10 +101,11 @@ export async function sendEmail(
         return simulateSendEmail(base64EncodedEmail);
     }
 
+    // STEP 3: Send the email via Gmail API
     const response = await gmail.users.messages.send({
         userId: 'me',
         requestBody: {
-            raw: base64EncodedEmail
+            raw: base64EncodedEmail,
         }
     });
 

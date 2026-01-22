@@ -12,7 +12,7 @@ export async function GET(
   if (!user) {
     return Response.json({ message: "Not authenticated" }, { status: 401 });
   }
-
+  
   try {
     // Verify worker belongs to user
     const worker = await prisma.worker.findUnique({
