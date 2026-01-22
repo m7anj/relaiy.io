@@ -1,8 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 
 const WORKER_TYPES = [
   {
@@ -35,6 +35,7 @@ const STYLE_OPTIONS = [
 
 export default function NewWorkerPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [selectedType, setSelectedType] = useState<string>("");
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
@@ -66,6 +67,14 @@ export default function NewWorkerPage() {
       note: string;
     };
   } | null>(null);
+
+  // Pre-fill description from query params
+  useEffect(() => {
+    const descriptionParam = searchParams.get('description');
+    if (descriptionParam) {
+      setDescription(decodeURIComponent(descriptionParam));
+    }
+  }, [searchParams]);
 
   const handleRecipientKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === "Enter" && recipientInput.trim()) {

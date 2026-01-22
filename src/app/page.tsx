@@ -1,93 +1,75 @@
 "use client";
 
-import { signIn, signOut, useSession } from "next-auth/react";
-import Link from "next/link";
+import { signIn, useSession } from "next-auth/react";
+import { useRouter } from "next/navigation";
+import { useEffect } from "react";
 
 export default function Page() {
   const { data: session, status } = useSession();
+  const router = useRouter();
+
+  useEffect(() => {
+    if (status === "authenticated") {
+      router.push("/dashboard");
+    }
+  }, [status, router]);
 
   if (status === "loading") {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-[#fafaf9]">
-        <div className="text-[#6b6b6b]">Loading...</div>
-      </div>
-    );
-  }
-
-  if (session) {
-    return (
-      <div className="min-h-screen bg-[#fafaf9] py-16 px-6">
-        <div className="max-w-3xl mx-auto">
-          <div className="flex items-center justify-between mb-16">
-            <div>
-              <h1 className="text-2xl font-medium text-[#2c2c2c] mb-2">relaiy.io</h1>
-              <p className="text-[#6b6b6b] text-base">
-                Email automation, described in plain English
-              </p>
-            </div>
-            <button
-              onClick={() => signOut()}
-              className="text-sm text-[#6b6b6b] hover:text-[#2c2c2c] transition-colors"
-            >
-              Sign out
-            </button>
-          </div>
-
-          <div className="space-y-4 mb-12">
-            <Link
-              href="/workers"
-              className="group block border border-[#e5e5e5] p-8 hover:bg-[#f5f5f5] transition-colors"
-            >
-              <h2 className="text-lg font-medium text-[#2c2c2c] mb-2">
-                Workers
-              </h2>
-              <p className="text-[#6b6b6b] text-sm mb-4">
-                View and manage your email automation workers
-              </p>
-              <div className="text-[#6b6b6b] group-hover:text-[#2c2c2c] text-sm transition-colors">
-                Open workers →
-              </div>
-            </Link>
-
-            <Link
-              href="/workers/new"
-              className="group block border border-[#e5e5e5] p-8 hover:bg-[#f5f5f5] transition-colors"
-            >
-              <h2 className="text-lg font-medium text-[#2c2c2c] mb-2">
-                Create worker
-              </h2>
-              <p className="text-[#6b6b6b] text-sm mb-4">
-                Describe your automation in plain English
-              </p>
-              <div className="text-[#6b6b6b] group-hover:text-[#2c2c2c] text-sm transition-colors">
-                Get started →
-              </div>
-            </Link>
-          </div>
-
-          <div className="pt-8 border-t border-[#e5e5e5]">
-            <div className="text-xs text-[#a3a3a3] mb-1">Signed in as</div>
-            <div className="text-sm text-[#2c2c2c]">
-              {session.user?.email}
-            </div>
-          </div>
+      <div
+        className="min-h-screen flex items-center justify-center"
+        style={{ background: 'var(--color-bg-base)' }}
+      >
+        <div className="animate-pulse" style={{ color: 'var(--color-text-secondary)' }}>
+          Loading...
         </div>
       </div>
     );
   }
 
+  if (session) {
+    return null; // Will redirect to dashboard
+  }
+
   return (
-    <div className="min-h-screen flex items-center justify-center bg-[#fafaf9] px-6">
-      <div className="text-center max-w-md">
-        <h1 className="text-3xl font-medium text-[#2c2c2c] mb-3">relaiy.io</h1>
-        <p className="text-base text-[#6b6b6b] mb-8">
-          Email automation that speaks your language
+    <div
+      className="min-h-screen flex items-center justify-center px-6"
+      style={{ background: 'var(--color-bg-base)' }}
+    >
+      <div className="text-center max-w-xl animate-fade-in">
+        <h1
+          className="text-6xl mb-4"
+          style={{
+            fontFamily: 'var(--font-display)',
+            color: 'var(--color-text-primary)',
+            fontWeight: 400,
+            letterSpacing: '-0.02em'
+          }}
+        >
+          relaiy
+        </h1>
+        <p
+          className="text-xl mb-12 max-w-md mx-auto leading-relaxed"
+          style={{ color: 'var(--color-text-secondary)' }}
+        >
+          Email automation that understands plain English
         </p>
         <button
           onClick={() => signIn("google")}
-          className="inline-flex items-center gap-3 px-6 py-3 bg-[#2c2c2c] text-white hover:bg-[#3c3c3c] transition-colors text-sm"
+          className="inline-flex items-center gap-3 px-8 py-4 rounded-full transition-all duration-200 text-base font-medium hover:scale-105 animate-slide-in-up stagger-2"
+          style={{
+            background: 'var(--color-accent-primary)',
+            color: 'white',
+            boxShadow: 'var(--shadow-md)'
+          }}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.boxShadow = 'var(--shadow-lg)';
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.boxShadow = 'var(--shadow-md)';
+          }}
         >
-          <svg className="w-4 h-4" viewBox="0 0 24 24">
+          <svg className="w-5 h-5" viewBox="0 0 24 24">
             <path
               fill="currentColor"
               d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
