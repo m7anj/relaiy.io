@@ -1,6 +1,7 @@
 import * as cron from 'node-cron';
 import { prisma } from './prisma';
 import { fetchEmailsFromRecipients, sendEmail, getGmailClient } from './gmail';
+import { generateEmailPreviews } from './preview';
 import { Configuration } from '@/types/configuration';
 import { WorkerType } from '@/types/worker';
 import { ExecutionStatus } from '@/generated/prisma';
@@ -171,26 +172,55 @@ export async function executeWorker(
 
     try {
       // Fetch context emails if configured
+      const contextEmails: Array<{ snippet?: string; subject?: string }> = [];
       if (config.contextEmails?.from && config.contextEmails.from.length > 0) {
-        const contextEmails = await fetchEmailsFromRecipients(
+        const gmail = getGmailClient(accessToken);
+        const messages = await fetchEmailsFromRecipients(
           accessToken,
           config.contextEmails.from
         );
-        affectedEmails.push(...contextEmails.map((email) => email.id || 'unknown'));
+
+        // Fetch full email details for context
+        for (const message of messages.slice(0, 3)) {
+          if (message.id) {
+            affectedEmails.push(message.id);
+
+            const fullMessage = await gmail.users.messages.get({
+              userId: 'me',
+              id: message.id,
+              format: 'full',
+            });
+
+            contextEmails.push({
+              subject: fullMessage.data.payload?.headers?.find(h => h.name === 'Subject')?.value || '',
+              snippet: fullMessage.data.snippet || '',
+            });
+          }
+        }
       }
 
-      // Generate email content
-      const subject = config.subjectTemplate || `Message from ${worker.name}`;
-      const body = `This is an automated email from ${worker.name}.\n\nTone: ${config.tone || 'professional'}\nStyle: ${config.style || 'brief'}`;
+      // Generate actual email content using LLM
+      const emailPreviews = await generateEmailPreviews(
+        config,
+        worker.type as WorkerType,
+        worker.name,
+        contextEmails
+      );
 
       // Send emails to recipients
-      for (const recipient of config.recipients) {
-        await sendEmail(accessToken, [recipient], subject, body, isDryRun);
+      for (const emailPreview of emailPreviews) {
+        await sendEmail(
+          accessToken,
+          [emailPreview.recipient],
+          emailPreview.subject,
+          emailPreview.body,
+          isDryRun
+        );
 
         actionsPerformed.push({
           action: isDryRun ? 'email_simulated' : 'email_sent',
-          recipient,
-          subject,
+          recipient: emailPreview.recipient,
+          subject: emailPreview.subject,
           timestamp: new Date().toISOString(),
           result: isDryRun ? 'dry_run' : 'sent',
         });

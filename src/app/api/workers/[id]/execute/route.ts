@@ -3,6 +3,7 @@ import { NextRequest } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { Configuration } from "@/types/configuration";
 import { executeWorker, registerWorker } from "@/lib/scheduler";
+import { validateGoogleToken, getTokenInfo } from "@/lib/tokenValidator";
 
 export async function POST(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const { id: workerId } = await params;
@@ -10,17 +11,44 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
   // 1. Auth check
   const user = await getAuthenticatedUser();
   if (!user) {
-    return Response.json({ message: "Not authenticated" }, { status: 401 });
+    return Response.json({
+      message: "Not authenticated. Your session may have expired. Please sign out and sign back in.",
+      action: "SIGN_OUT_REQUIRED"
+    }, { status: 401 });
   }
 
   // 2. Get access token
   const accessToken = user.accounts[0]?.access_token;
   if (!accessToken) {
-    return Response.json({ message: "No Google account connected" }, { status: 400 });
+    return Response.json({
+      message: "No Google account connected. Please reconnect your Google account.",
+      action: "RECONNECT_REQUIRED"
+    }, { status: 400 });
   }
 
+  // 3. Validate token before using it
+  console.log('[Execute Worker] Validating access token...');
+  const isValid = await validateGoogleToken(accessToken);
+  if (!isValid) {
+    console.error('[Execute Worker] Token validation failed, fetching token info...');
+    const tokenInfo = await getTokenInfo(accessToken);
+    console.error('[Execute Worker] Token info:', tokenInfo);
+
+    return Response.json({
+      message: "Your Google access token is invalid or expired. Please sign out and sign back in.",
+      action: "SIGN_OUT_REQUIRED",
+      debug: {
+        tokenInfo,
+        expiresAt: user.accounts[0]?.expires_at
+          ? new Date(user.accounts[0].expires_at * 1000).toISOString()
+          : 'unknown'
+      }
+    }, { status: 401 });
+  }
+  console.log('[Execute Worker] Token validation successful');
+
   try {
-    // 3. Verify worker exists and belongs to user
+    // 4. Verify worker exists and belongs to user
     const worker = await prisma.worker.findUnique({
       where: { id: workerId },
       select: {
@@ -43,7 +71,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
       );
     }
 
-    // 4. Check if worker can be executed
+    // 5. Check if worker can be executed
     if (worker.status !== "ACTIVE" && worker.status !== "DRAFT") {
       return Response.json(
         { message: `Cannot execute worker with status: ${worker.status}` },
@@ -53,14 +81,14 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
 
     const config = worker.configuration as unknown as Configuration;
 
-    // 5. Parse optional dryRun flag from request body
+    // 6. Parse optional dryRun flag from request body
     const body = await req.json().catch(() => ({}));
     const isDryRun = body.isDryRun || false;
 
-    // 6. Check if this is the first execution (DRAFT -> ACTIVE transition)
+    // 7. Check if this is the first execution (DRAFT -> ACTIVE transition)
     const isFirstExecution = worker.status === "DRAFT";
 
-    // 7. If first execution and not a dry run, activate worker and register with scheduler
+    // 8. If first execution and not a dry run, activate worker and register with scheduler
     if (isFirstExecution && !isDryRun) {
       // Update status to ACTIVE
       await prisma.worker.update({
@@ -79,7 +107,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
       }
     }
 
-    // 8. Execute the worker using the scheduler's executeWorker function
+    // 9. Execute the worker using the scheduler's executeWorker function
     const result = await executeWorker(workerId, isDryRun);
 
     if (result.success) {
@@ -96,6 +124,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
         isDryRun,
       });
     } else {
+      console.error(`[Execute Worker] Worker ${workerId} execution failed:`, result.error);
       return Response.json(
         {
           message: "Execution failed",
@@ -107,6 +136,8 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     }
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : String(error);
+    const errorStack = error instanceof Error ? error.stack : undefined;
+    console.error(`[Execute Worker] Failed to execute worker ${workerId}:`, errorMessage, errorStack);
     return Response.json(
       { message: "Failed to execute worker", error: errorMessage },
       { status: 500 }

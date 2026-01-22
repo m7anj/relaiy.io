@@ -38,9 +38,12 @@ const WORKER_TYPES = [
 export default function NewWorkerPage() {
   const router = useRouter();
   const [selectedType, setSelectedType] = useState<string>("");
-  const [description, setDescription] = useState("");
   const [name, setName] = useState("");
+  const [description, setDescription] = useState("");
   const [loading, setLoading] = useState(false);
+  const [recipients, setRecipients] = useState<string[]>([]);
+  const [recipientInput, setRecipientInput] = useState("");
+  const [uploadedFiles, setUploadedFiles] = useState<Array<{ name: string; content: string; size: number }>>([]);
   const [preview, setPreview] = useState<{
     worker: {
       id: string;
@@ -62,11 +65,73 @@ export default function NewWorkerPage() {
     };
   } | null>(null);
 
+  const handleRecipientKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === "Enter" && recipientInput.trim()) {
+      e.preventDefault();
+      const email = recipientInput.trim();
+
+      // Basic email validation
+      if (email.includes("@") && !recipients.includes(email)) {
+        setRecipients([...recipients, email]);
+        setRecipientInput("");
+      }
+    }
+  };
+
+  const removeRecipient = (email: string) => {
+    setRecipients(recipients.filter((r) => r !== email));
+  };
+
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (!files) return;
+
+    const MAX_CHARS_PER_FILE = 10000; // 10k characters per file
+
+    for (const file of Array.from(files)) {
+      try {
+        const text = await file.text();
+
+        if (text.length > MAX_CHARS_PER_FILE) {
+          alert(`File "${file.name}" exceeds ${MAX_CHARS_PER_FILE} character limit`);
+          continue;
+        }
+
+        setUploadedFiles((prev) => [
+          ...prev,
+          {
+            name: file.name,
+            content: text,
+            size: text.length,
+          },
+        ]);
+      } catch (error) {
+        console.error(`Failed to read file ${file.name}:`, error);
+        alert(`Failed to read file: ${file.name}`);
+      }
+    }
+
+    // Reset input
+    e.target.value = "";
+  };
+
+  const removeFile = (fileName: string) => {
+    setUploadedFiles((prev) => prev.filter((f) => f.name !== fileName));
+  };
+
   const handleCreate = async () => {
     if (!selectedType || !description) return;
 
+    if (recipients.length === 0) {
+      alert("Please add at least one recipient");
+      return;
+    }
+
     setLoading(true);
     try {
+      // Combine file contents into context array
+      const contextArray = uploadedFiles.map((file) => `File: ${file.name}\n${file.content}`);
+
       const res = await fetch("/api/workers/create", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -74,6 +139,8 @@ export default function NewWorkerPage() {
           type: selectedType,
           description,
           name: name || description.slice(0, 50),
+          recipients,
+          context: contextArray.length > 0 ? contextArray : undefined,
         }),
       });
 
@@ -96,6 +163,11 @@ export default function NewWorkerPage() {
     if (preview?.worker.id) {
       router.push(`/workers/${preview.worker.id}`);
     }
+  };
+
+  const handleEditAndRegenerate = () => {
+    // Go back to edit mode, keeping the form data
+    setPreview(null);
   };
 
   if (preview) {
@@ -174,6 +246,12 @@ export default function NewWorkerPage() {
 
             <div className="flex gap-3">
               <button
+                onClick={handleEditAndRegenerate}
+                className="px-6 py-3 border-2 border-slate-300 text-slate-700 rounded-lg hover:bg-slate-50 transition-colors font-medium"
+              >
+                ← Edit & Regenerate
+              </button>
+              <button
                 onClick={handleActivate}
                 className="flex-1 px-6 py-3 bg-slate-900 text-white rounded-lg hover:bg-slate-800 transition-all font-medium"
               >
@@ -183,7 +261,7 @@ export default function NewWorkerPage() {
                 href="/workers"
                 className="px-6 py-3 border border-slate-300 text-slate-700 rounded-lg hover:bg-slate-50 transition-colors font-medium text-center"
               >
-                View All Workers
+                All Workers
               </Link>
             </div>
           </div>
@@ -258,20 +336,124 @@ export default function NewWorkerPage() {
           </div>
 
           {/* Description Input */}
-          <div className="mb-8">
+          <div className="mb-6">
             <label className="block text-sm font-medium text-slate-700 mb-2">
               What should this worker do?
             </label>
             <textarea
               value={description}
               onChange={(e) => setDescription(e.target.value)}
-              placeholder="Describe in plain English what you want this worker to do. Include who to email, what to say, and how often to send."
-              rows={6}
+              placeholder="Describe in plain English what you want this worker to do."
+              rows={4}
               className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-slate-900 focus:border-transparent resize-none"
             />
             <p className="text-xs text-slate-500 mt-2">
-              Example: "Send a weekly check-in email to my clients every Monday
-              at 9am asking how their project is going"
+              Example: "Send a weekly check-in asking how their project is going"
+            </p>
+          </div>
+
+          {/* Recipients Selection - Tag Input */}
+          <div className="mb-6">
+            <label className="block text-sm font-medium text-slate-700 mb-2">
+              Recipients <span className="text-red-500">*</span>
+            </label>
+
+            {/* Tag Display */}
+            {recipients.length > 0 && (
+              <div className="flex flex-wrap gap-2 mb-3 p-3 border border-slate-200 rounded-lg bg-slate-50">
+                {recipients.map((email) => (
+                  <div
+                    key={email}
+                    className="inline-flex items-center gap-2 px-3 py-1 bg-white border border-slate-300 rounded-full text-sm shadow-sm"
+                  >
+                    <span>{email}</span>
+                    <button
+                      onClick={() => removeRecipient(email)}
+                      className="text-slate-500 hover:text-red-600 font-bold"
+                      type="button"
+                    >
+                      ×
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {/* Tag Input */}
+            <div>
+              <input
+                type="text"
+                value={recipientInput}
+                onChange={(e) => setRecipientInput(e.target.value)}
+                onKeyDown={handleRecipientKeyDown}
+                placeholder="Enter email address and press Enter to add"
+                className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-slate-900 focus:border-transparent"
+              />
+              <p className="text-xs text-slate-500 mt-2">
+                Press Enter after typing each email address to add it as a tag
+              </p>
+            </div>
+          </div>
+
+          {/* Additional Context - File Upload */}
+          <div className="mb-8">
+            <label className="block text-sm font-medium text-slate-700 mb-2">
+              Additional Context <span className="text-slate-400">(optional)</span>
+            </label>
+
+            {/* Uploaded Files Display */}
+            {uploadedFiles.length > 0 && (
+              <div className="mb-3 space-y-2">
+                {uploadedFiles.map((file) => (
+                  <div
+                    key={file.name}
+                    className="flex items-center justify-between p-3 bg-slate-50 border border-slate-200 rounded-lg"
+                  >
+                    <div className="flex-1">
+                      <p className="text-sm font-medium text-slate-900">
+                        {file.name}
+                      </p>
+                      <p className="text-xs text-slate-500">
+                        {file.size.toLocaleString()} characters
+                      </p>
+                    </div>
+                    <button
+                      onClick={() => removeFile(file.name)}
+                      className="ml-3 text-red-500 hover:text-red-700 font-bold"
+                      type="button"
+                    >
+                      ×
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {/* File Upload Input */}
+            <div className="border-2 border-dashed border-slate-300 rounded-lg p-6 text-center hover:border-slate-400 transition-colors">
+              <input
+                type="file"
+                id="context-files"
+                multiple
+                onChange={handleFileUpload}
+                className="hidden"
+                accept=".txt,.md,.json,.csv,.xml,.html"
+              />
+              <label
+                htmlFor="context-files"
+                className="cursor-pointer block"
+              >
+                <div className="text-4xl mb-2">📄</div>
+                <p className="text-sm font-medium text-slate-700 mb-1">
+                  Click to upload context files
+                </p>
+                <p className="text-xs text-slate-500">
+                  Max 10,000 characters per file
+                </p>
+              </label>
+            </div>
+            <p className="text-xs text-slate-500 mt-2">
+              Upload text files with additional information for better email generation
             </p>
           </div>
 

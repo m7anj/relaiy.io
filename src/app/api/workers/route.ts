@@ -25,7 +25,8 @@ export async function GET() {
       workers,
       count: workers.length,
     });
-  } catch (e) {
-    return Response.json({ error: (e as Error).message }, { status: 500 });
+  } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : String(error);
+    return Response.json({ error: errorMessage }, { status: 500 });
   }
 }

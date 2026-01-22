@@ -20,7 +20,7 @@ export async function POST(req: Request) {
 
   try {
     // 3. Parse request body
-    const { description, type, name, context } = await req.json();
+    const { description, type, name, context, recipients } = await req.json();
 
     if (!description || !type) {
       return Response.json(
@@ -29,8 +29,20 @@ export async function POST(req: Request) {
       );
     }
 
+    if (recipients && (!Array.isArray(recipients) || recipients.length === 0)) {
+      return Response.json(
+        { message: "Recipients must be a non-empty array" },
+        { status: 400 }
+      );
+    }
+
     // 4. Generate configuration from natural language
     const configuration = await generateWorkerConfig(description, type as WorkerType, context);
+
+    // Override recipients if provided by user
+    if (recipients && recipients.length > 0) {
+      configuration.recipients = recipients;
+    }
 
     // 5. Fetch context emails if configured
     const contextEmails: Array<{ snippet?: string; subject?: string }> = [];

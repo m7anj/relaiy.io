@@ -36,8 +36,9 @@ export async function GET(
 
     // 5. return the worker
     return Response.json({ worker });
-  } catch (e) {
-    return Response.json({ error: (e as Error).message }, { status: 500 });
+  } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : String(error);
+    return Response.json({ error: errorMessage }, { status: 500 });
   }
 }
 
@@ -72,14 +73,26 @@ export async function PATCH(
 
     // 4. update the worker with allowed fields only
     // only allow updating specific fields to prevent overwriting critical data
+
+    // If recipients are provided, merge them into the existing configuration
+    let updatedConfiguration = existingWorker.configuration;
+    if (body.recipients !== undefined && Array.isArray(body.recipients)) {
+      updatedConfiguration = {
+        ...(existingWorker.configuration as object),
+        recipients: body.recipients,
+      };
+    } else if (body.configuration !== undefined) {
+      updatedConfiguration = body.configuration;
+    }
+
     const updatedWorker = await prisma.worker.update({
       where: { id: workerId },
       data: {
         ...(body.name !== undefined && { name: body.name }),
         ...(body.description !== undefined && { description: body.description }),
         ...(body.status !== undefined && { status: body.status }),
-        ...(body.configuration !== undefined && { configuration: body.configuration }),
         ...(body.information !== undefined && { information: body.information }),
+        ...(updatedConfiguration !== existingWorker.configuration && { configuration: updatedConfiguration }),
       },
     });
 
@@ -109,8 +122,9 @@ export async function PATCH(
       message: "Worker updated successfully",
       worker: updatedWorker,
     });
-  } catch (e) {
-    return Response.json({ error: (e as Error).message }, { status: 500 });
+  } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : String(error);
+    return Response.json({ error: errorMessage }, { status: 500 });
   }
 }
 
@@ -153,7 +167,8 @@ export async function DELETE(
       message: "Worker deleted successfully",
       deletedWorkerId: workerId,
     });
-  } catch (e) {
-    return Response.json({ error: (e as Error).message }, { status: 500 });
+  } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : String(error);
+    return Response.json({ error: errorMessage }, { status: 500 });
   }
 }
